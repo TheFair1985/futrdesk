@@ -2,8 +2,12 @@
 import { promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
 
-// Load environment variables natively
-process.loadEnvFile('.env.local');
+// Load environment variables safely (if .env.local exists locally)
+try {
+    process.loadEnvFile('.env.local');
+} catch (e) {
+    // Silently continue if running in GitHub Actions / production container
+}
 
 const CONFIG_PATH = './config.json';
 const SIGNALS_PATH = './02_Signals/raw_signals.json';
