@@ -4,14 +4,24 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
+    // Health-check / Browser test via GET
+    if (req.method === 'GET') {
+        return res.status(200).json({
+            status: 'online',
+            service: 'Future Desk OS - Telegram Webhook Bridge',
+            timestamp: new Date().toISOString(),
+            instructions: 'Register this endpoint with Telegram setWebhook API.'
+        });
+    }
+
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed. Only POST is accepted.' });
+        return res.status(405).json({ error: 'Method not allowed. Only GET and POST are accepted.' });
     }
 
     try {
         const body = req.body || {};
         
-        // Extract message or callback query from Telegram payload
+        // Extract message or callback query from Telegram update payload
         const message = body.message || body.channel_post || (body.callback_query ? body.callback_query.message : null);
         const callbackData = body.callback_query ? body.callback_query.data : null;
         
@@ -21,26 +31,45 @@ export default async function handler(req, res) {
 
         const chatId = String(message.chat.id);
         const chatUsername = message.chat.username ? String(message.chat.username) : '';
-        const text = (message.text || callbackData || '').trim();
+        const rawText = (message.text || callbackData || '').trim();
+        const text = rawText.toLowerCase();
 
-        const expectedChatId = String(process.env.TELEGRAM_CHAT_ID || '');
+        const rawExpectedId = String(process.env.TELEGRAM_CHAT_ID || '').replace(/^@/, '').trim();
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
         const ghPat = process.env.GH_PAT || process.env.GITHUB_PAT || process.env.GITHUB_TOKEN;
         const repo = process.env.GITHUB_REPO || 'TheFair1985/futrdesk';
 
-        console.log(`[Webhook] Incoming message from chatId: ${chatId} (@${chatUsername}). Text: "${text}"`);
+        console.log(`[Webhook] Received message from chatId: "${chatId}" (@${chatUsername}). Content: "${rawText}"`);
 
-        // Security / Verification Check
-        if (expectedChatId && chatId !== expectedChatId && chatUsername !== expectedChatId && !chatUsername.includes(expectedChatId)) {
-            console.warn(`[Webhook] Unauthorized sender attempt: ${chatId} / @${chatUsername}`);
-            return res.status(403).json({ error: 'Unauthorized chat ID' });
+        // Helper command: /id or /myid or /start -> Returns the user's Chat ID immediately
+        if (text === '/id' || text === '/myid' || text === '/start') {
+            const replyMsg = `🤖 *Future Desk OS Bridge Active*\n\n` +
+                             `📍 *Your Numeric Chat ID:* \`${chatId}\`\n` +
+                             `👤 *Username:* @${chatUsername || 'N/A'}\n\n` +
+                             `Copy this Chat ID and set \`TELEGRAM_CHAT_ID=${chatId}\` in your Vercel & GitHub environment variables.\n\n` +
+                             `Commands:\n` +
+                             `• \`/id\` - Show Chat ID\n` +
+                             `• \`/approve\` - Launch Autonomous Production Run on GitHub`;
+            await sendTelegramMessage(botToken, chatId, replyMsg);
+            return res.status(200).json({ status: 'success', chatId: chatId });
         }
 
-        // Check for /approve command
+        // Security / Verification Check (if TELEGRAM_CHAT_ID is configured)
+        const isAuthorized = !rawExpectedId || 
+                             chatId === rawExpectedId || 
+                             (chatUsername && chatUsername.toLowerCase() === rawExpectedId.toLowerCase());
+
+        if (!isAuthorized) {
+            console.warn(`[Webhook] Unauthorized attempt from chatId: ${chatId} (@${chatUsername}). Expected: ${rawExpectedId}`);
+            await sendTelegramMessage(botToken, chatId, `⚠️ *Unauthorized Chat ID*\nYour Chat ID is \`${chatId}\`. Please update \`TELEGRAM_CHAT_ID\` in Vercel.`);
+            return res.status(403).json({ error: 'Unauthorized Chat ID', yourChatId: chatId });
+        }
+
+        // Handle /approve command
         if (text === '/approve' || text.startsWith('/approve') || text === 'approve') {
             if (!ghPat) {
-                console.error('[Webhook] Missing GH_PAT / GITHUB_PAT environment variable');
-                await sendTelegramMessage(botToken, chatId, '⚠️ *Error:* GitHub Personal Access Token (GH_PAT) is not configured in Vercel environment variables.');
+                console.error('[Webhook] Missing GH_PAT environment variable');
+                await sendTelegramMessage(botToken, chatId, '⚠️ *Error:* GitHub Access Token (\`GH_PAT\`) is missing in Vercel environment variables.');
                 return res.status(500).json({ error: 'Missing GitHub Access Token' });
             }
 
@@ -57,6 +86,7 @@ export default async function handler(req, res) {
                     event_type: 'telegram_approve',
                     client_payload: {
                         approved_by: chatId,
+                        sender: chatUsername,
                         timestamp: new Date().toISOString()
                     }
                 })
@@ -64,23 +94,19 @@ export default async function handler(req, res) {
 
             if (ghResponse.ok || ghResponse.status === 204) {
                 console.log('[Webhook] Successfully dispatched telegram_approve event to GitHub');
-                await sendTelegramMessage(botToken, chatId, '⚡ *Approved!* GitHub Actions Autonomous Production Run has been triggered.');
+                await sendTelegramMessage(botToken, chatId, '⚡ *Approved!* Autonomous Production Run triggered on GitHub Actions.');
                 return res.status(200).json({ success: true, message: 'Dispatched telegram_approve to GitHub Actions' });
             } else {
                 const errorText = await ghResponse.text();
                 console.error(`[Webhook] GitHub API dispatch failed [${ghResponse.status}]: ${errorText}`);
-                await sendTelegramMessage(botToken, chatId, `❌ *GitHub Dispatch Failed:* Status ${ghResponse.status}`);
+                await sendTelegramMessage(botToken, chatId, `❌ *GitHub Dispatch Failed (${ghResponse.status}):*\n${errorText}`);
                 return res.status(500).json({ error: 'GitHub dispatch failed', details: errorText });
             }
         }
 
-        // Default response for other messages or commands
-        if (text === '/start' || text === '/status') {
-            await sendTelegramMessage(botToken, chatId, '🤖 *Future Desk OS Bridge Active*%0AStatus: Online & Ready.%0APendings: Waiting for `/approve` signal.');
-            return res.status(200).json({ status: 'online' });
-        }
-
-        return res.status(200).json({ status: 'ignored', message: 'Command not recognized' });
+        // Generic reply for unrecognized commands
+        await sendTelegramMessage(botToken, chatId, `ℹ️ *Command Received:* "${rawText}"\nReply with \`/approve\` to launch production run or \`/id\` to inspect your Chat ID.`);
+        return res.status(200).json({ status: 'received', message: rawText });
 
     } catch (err) {
         console.error('[Webhook Error]', err);
