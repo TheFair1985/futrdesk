@@ -1,37 +1,59 @@
 import { promises as fs } from 'fs';
-import { execSync } from 'child_process';
 
 const SCRIPT_JSON_PATH = './03_Scripts/EP03_Top_Signal_Script.json';
 const DISTRIBUTION_PACKAGE_JSON_PATH = './07_Published/EP06_Distribution_Package.json';
 const DISTRIBUTION_PACKAGE_MD_PATH = './07_Published/EP06_Distribution_Package.md';
 
-const NET_COST_PER_LLM_CALL = 0.005;
+const NET_COST_PER_LLM_CALL = 0.0005; // Groq ultra-low latency & cost estimation
 
-function callAgy(promptContent, fallbackObj = {}) {
-    const MAX_RETRIES = 2;
-    const TIMEOUT_MS = 15000;
-
-    for (let retry = 0; retry < MAX_RETRIES; retry++) {
-        const escapedPrompt = `'${promptContent.replace(/'/g, "'\\''")}'`;
-        const command = `agy -p ${escapedPrompt}`;
-
-        try {
-            const output = execSync(command, { encoding: 'utf-8', stdio: 'pipe', timeout: TIMEOUT_MS });
-            let jsonString = output.substring(output.indexOf('{'), output.lastIndexOf('}') + 1);
-            
-            let parsedOutput;
-            try {
-                parsedOutput = JSON.parse(jsonString);
-            } catch (jsonError) {
-                jsonString = jsonString.replace(/```json\n?|\n?```/g, '').trim();
-                parsedOutput = JSON.parse(jsonString);
-            }
-            return parsedOutput;
-        } catch (error) {
-            console.warn(`Attempt ${retry + 1} for agy call skipped (${error.message}).`);
-        }
+// --- Native Groq API Helper ---
+async function callGroq(promptContent, fallbackObj = {}) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+        console.warn('⚠️ [Groq API] GROQ_API_KEY is missing. Utilizing structured fallback.');
+        return fallbackObj;
     }
-    return fallbackObj;
+
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'llama3-70b-8192',
+                messages: [
+                    { role: 'system', content: 'You are an AI executive intelligence analyst for Future Desk OS. Respond ONLY with a valid JSON object.' },
+                    { role: 'user', content: promptContent }
+                ],
+                response_format: { type: 'json_object' }
+            })
+        });
+
+        if (!response.ok) {
+            const errorDetails = await response.text();
+            console.warn(`⚠️ [Groq API] Response error [HTTP ${response.status}]: ${errorDetails}`);
+            return fallbackObj;
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (!content) return fallbackObj;
+
+        let parsedOutput;
+        try {
+            parsedOutput = JSON.parse(content);
+        } catch (e) {
+            const cleaned = content.substring(content.indexOf('{'), content.lastIndexOf('}') + 1);
+            parsedOutput = JSON.parse(cleaned);
+        }
+        return parsedOutput;
+
+    } catch (err) {
+        console.warn(`⚠️ [Groq API] Fetch error: ${err.message}`);
+        return fallbackObj;
+    }
 }
 
 // --- 1. YOUTUBE SHORTS / TIKTOK / REELS METADATA ---
@@ -42,7 +64,7 @@ async function generateVideoMetadata(leadingQuestion, topSignal) {
         Top Signal Headline: "${topSignal.headline}"
         Top Signal Causal Pillar: "${topSignal.causal_pillar}"
 
-        Respond ONLY with a JSON object in this format:
+        Respond ONLY with a valid JSON object in this exact format:
         {
           "titles": ["Title Option 1", "Title Option 2", "Title Option 3"],
           "description": "Video description...",
@@ -58,7 +80,7 @@ async function generateVideoMetadata(leadingQuestion, topSignal) {
         description: `B2B Executive Briefing on ${topSignal.causal_pillar} signal: "${topSignal.headline}"`,
         hashtags: ["#B2B", "#AI", "#FutureDeskOS"]
     };
-    return callAgy(prompt, fallback);
+    return callGroq(prompt, fallback);
 }
 
 // --- 2. LINKEDIN EXECUTIVE BRIEFING POST ---
@@ -69,7 +91,7 @@ async function generateLinkedInPost(leadingQuestion, topSignal) {
         Top Signal Headline: "${topSignal.headline}"
         Top Signal Causal Pillar: "${topSignal.causal_pillar}"
 
-        Respond ONLY with a JSON object in this format:
+        Respond ONLY with a valid JSON object in this exact format:
         {
           "post": "Full LinkedIn post text..."
         }
@@ -77,7 +99,7 @@ async function generateLinkedInPost(leadingQuestion, topSignal) {
     const fallback = {
         post: `🚀 Executive Briefing: ${topSignal.causal_pillar} Shift\n\nSignal: "${topSignal.headline}"\n\nKey Question: ${leadingQuestion}\n\nStrategic Takeaway for B2B Leaders: Evaluate Capex and decision systems for the upcoming quarter.`
     };
-    return callAgy(prompt, fallback);
+    return callGroq(prompt, fallback);
 }
 
 // --- 3. X (TWITTER) THREAD ---
@@ -87,7 +109,7 @@ async function generateXThread(leadingQuestion, topSignal) {
         Leading Question: "${leadingQuestion}"
         Top Signal Headline: "${topSignal.headline}"
 
-        Respond ONLY with a JSON object in this format:
+        Respond ONLY with a valid JSON object in this exact format:
         {
           "thread": ["Tweet 1", "Tweet 2", "Tweet 3", "Tweet 4", "Tweet 5"]
         }
@@ -101,7 +123,7 @@ async function generateXThread(leadingQuestion, topSignal) {
             `5/5 Follow @FutureDeskOS for daily B2B intelligence.`
         ]
     };
-    return callAgy(prompt, fallback);
+    return callGroq(prompt, fallback);
 }
 
 // --- 4. NEWSLETTER LEAD SECTION ---
@@ -111,7 +133,7 @@ async function generateNewsletterLead(leadingQuestion, topSignal) {
         Leading Question: "${leadingQuestion}"
         Top Signal Headline: "${topSignal.headline}"
 
-        Respond ONLY with a JSON object in this format:
+        Respond ONLY with a valid JSON object in this exact format:
         {
           "article": "Full newsletter lead article text..."
         }
@@ -119,7 +141,7 @@ async function generateNewsletterLead(leadingQuestion, topSignal) {
     const fallback = {
         article: `Welcome to this issue of Future Desk OS. Today we examine "${topSignal.headline}" and what it signifies for decision systems in the coming cycle.`
     };
-    return callAgy(prompt, fallback);
+    return callGroq(prompt, fallback);
 }
 
 // Helper to push preview to Telegram
@@ -152,12 +174,11 @@ async function sendTelegramPreview(botToken, chatId, messageText) {
 
 // --- MAIN FUNCTION ---
 async function main() {
-    console.log('🚀 Starting Distribution Engine...');
+    console.log('🚀 Starting Native Groq Cloud AI Distribution Engine...');
 
     const isSandboxMode = process.env.SANDBOX_MODE !== 'false';
     console.log(`🔒 Environment Mode: ${isSandboxMode ? 'SANDBOX_MODE (Dry Run)' : 'LIVE_PRODUCTION'}`);
 
-    // Read top signal script
     let scriptJson;
     try {
         const rawScript = await fs.readFile(SCRIPT_JSON_PATH, 'utf-8');
@@ -177,25 +198,24 @@ async function main() {
     const leadingQuestion = scriptJson.leadingQuestion;
     const topSignal = scriptJson.topSignal;
 
-    console.log(`Processing Distribution Package for Signal: "${topSignal.headline}"`);
+    console.log(`Processing Distribution Package for Signal: "${topSignal.headline}" via Groq Cloud API (Llama 3 70B)...`);
 
     let totalLlmCost = 0;
     const distributionPackage = {};
 
-    // Generate metadata & contents
-    console.log('Generating YouTube Shorts / TikTok / Reels metadata...');
+    console.log('Generating YouTube Shorts / TikTok / Reels metadata with Groq...');
     distributionPackage.videoMetadata = await generateVideoMetadata(leadingQuestion, topSignal);
     totalLlmCost += NET_COST_PER_LLM_CALL;
 
-    console.log('Generating LinkedIn post...');
+    console.log('Generating LinkedIn post with Groq...');
     distributionPackage.linkedInPost = await generateLinkedInPost(leadingQuestion, topSignal);
     totalLlmCost += NET_COST_PER_LLM_CALL;
 
-    console.log('Generating X (Twitter) thread...');
+    console.log('Generating X (Twitter) thread with Groq...');
     distributionPackage.xThread = await generateXThread(leadingQuestion, topSignal);
     totalLlmCost += NET_COST_PER_LLM_CALL;
 
-    console.log('Generating Newsletter lead section...');
+    console.log('Generating Newsletter lead section with Groq...');
     distributionPackage.newsletterLead = await generateNewsletterLead(leadingQuestion, topSignal);
     totalLlmCost += NET_COST_PER_LLM_CALL;
 
@@ -203,10 +223,10 @@ async function main() {
         generationTimestamp: new Date().toISOString(),
         netProcessingCostEur: totalLlmCost,
         sourceScriptId: scriptJson.metadata ? scriptJson.metadata.topSignalId : 'sig_001',
-        sandboxMode: isSandboxMode
+        sandboxMode: isSandboxMode,
+        aiEngine: 'Groq Cloud Llama-3-70b-8192'
     };
 
-    // Save local assets
     await fs.writeFile(DISTRIBUTION_PACKAGE_JSON_PATH, JSON.stringify(distributionPackage, null, 2));
     console.log(`Saved distribution package JSON to ${DISTRIBUTION_PACKAGE_JSON_PATH}`);
 
@@ -227,7 +247,7 @@ async function main() {
         const chatId = process.env.TELEGRAM_CHAT_ID || '846896390';
 
         const previewMsg = 
-            `📦 *Future Desk OS - Dry Run Distribution Bundle*\n\n` +
+            `📦 *Future Desk OS - Groq Cloud Dry Run Bundle*\n\n` +
             `🎯 *Top Signal:* "${topSignal.headline}"\n` +
             `🏛 *Pillar:* ${topSignal.causal_pillar}\n\n` +
             `💼 *LinkedIn Hook Preview:*\n` +
@@ -249,6 +269,7 @@ async function main() {
 
     // --- ABSCHLUSS-REPORT ---
     console.log('\n--- PUBLISHING DASHBOARD ---');
+    console.log(`Engine: Groq REST API (Llama 3 70B)`);
     console.log(`Mode: ${isSandboxMode ? 'SANDBOX (Preview Only)' : 'LIVE'}`);
     console.log('1. Strongest LinkedIn Executive Hook Preview:');
     console.log(`  "${(distributionPackage.linkedInPost.post || '').split('\n')[0]}"`);

@@ -1,18 +1,55 @@
 import { promises as fs } from 'fs';
-import { execSync } from 'child_process';
 
 const RAW_SIGNALS_PATH = './02_Signals/raw_signals.json';
 const SCORED_SIGNALS_PATH = './02_Signals/scored_signals.json';
 const MIN_EDITORIAL_SCORE_THRESHOLD = process.env.MIN_EDITORIAL_SCORE_THRESHOLD ? parseInt(process.env.MIN_EDITORIAL_SCORE_THRESHOLD) : 18;
 
-function getScoringPrompt(headline) {
-    const escapedHeadline = JSON.stringify(headline)
-                                .slice(1, -1)
-                                .replace(/"/g, '\\"');
+async function callGroq(promptContent, fallbackObj = {}) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+        return fallbackObj;
+    }
 
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'llama3-70b-8192',
+                messages: [
+                    { role: 'system', content: 'You are an AI scoring gatekeeper for B2B signals. Respond ONLY with a valid JSON object.' },
+                    { role: 'user', content: promptContent }
+                ],
+                response_format: { type: 'json_object' }
+            })
+        });
+
+        if (!response.ok) return fallbackObj;
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (!content) return fallbackObj;
+
+        let parsedOutput;
+        try {
+            parsedOutput = JSON.parse(content);
+        } catch (e) {
+            const cleaned = content.substring(content.indexOf('{'), content.lastIndexOf('}') + 1);
+            parsedOutput = JSON.parse(cleaned);
+        }
+        return parsedOutput;
+    } catch (err) {
+        return fallbackObj;
+    }
+}
+
+function getScoringPrompt(headline) {
     return `
         You are evaluating from the perspective of a North American B2B Executive (CEO, COO, Head of Supply Chain).
-        Signal: "${escapedHeadline}"
+        Signal: "${headline}"
         
         Provide a score from 1 to 5 for each of the following criteria:
         - surprise_score: How surprising or unexpected is this? (1=obvious, 5=shocking)
@@ -21,51 +58,12 @@ function getScoringPrompt(headline) {
         - longevity_score: What is the potential lifespan of its relevance? (1=fleeting, 5=generational)
         - actionability_score: How actionable is this for a B2B leader? (1=no action, 5=immediate action required).
 
-        Return ONLY a valid, raw JSON object with the keys: "surprise_score", "scale_score", "timeliness_score", "longevity_score", "actionability_score". Do not include any other text or markdown.
+        Respond ONLY with a valid JSON object with the keys: "surprise_score", "scale_score", "timeliness_score", "longevity_score", "actionability_score".
     `;
 }
 
 async function scoreSignal(signal) {
-    const MAX_RETRIES = 2;
-    const TIMEOUT_MS = 10000;
-
-    for (let retry = 0; retry < MAX_RETRIES; retry++) {
-        const promptContent = getScoringPrompt(signal.headline);
-        const escapedPrompt = `'${promptContent.replace(/'/g, "'\\''")}'`;
-        const command = `agy -p ${escapedPrompt}`;
-
-        try {
-            const output = execSync(command, { encoding: 'utf-8', stdio: 'pipe', timeout: TIMEOUT_MS });
-            let jsonString = output.substring(output.indexOf('{'), output.lastIndexOf('}') + 1);
-            
-            let scores;
-            try {
-                scores = JSON.parse(jsonString);
-            } catch (jsonError) {
-                jsonString = jsonString.replace(/```json\n?|\n?```/g, '').trim();
-                scores = JSON.parse(jsonString);
-            }
-            
-            const total_editorial_score = 
-                (scores.surprise_score || 0) +
-                (scores.scale_score || 0) +
-                (scores.timeliness_score || 0) +
-                (scores.longevity_score || 0) +
-                (scores.actionability_score || 0);
-
-            return {
-                ...signal,
-                ...scores,
-                total_editorial_score,
-                status: total_editorial_score >= MIN_EDITORIAL_SCORE_THRESHOLD ? 'approved' : 'rejected'
-            };
-        } catch (error) {
-            console.warn(`Attempt ${retry + 1} for signal "${signal.id}" agy call skipped (${error.message}).`);
-        }
-    }
-
-    // Heuristic fallback if agy CLI is not available in cloud runner
-    console.log(`ℹ️ [Gatekeeper] Using heuristic fallback score for signal "${signal.id}"`);
+    const promptContent = getScoringPrompt(signal.headline);
     const fallbackScores = {
         surprise_score: 4,
         scale_score: 4,
@@ -73,26 +71,33 @@ async function scoreSignal(signal) {
         longevity_score: 4,
         actionability_score: 4
     };
-    const total_editorial_score = 21;
+
+    const scores = await callGroq(promptContent, fallbackScores);
+
+    const total_editorial_score = 
+        (scores.surprise_score || 4) +
+        (scores.scale_score || 4) +
+        (scores.timeliness_score || 5) +
+        (scores.longevity_score || 4) +
+        (scores.actionability_score || 4);
 
     return {
         ...signal,
-        ...fallbackScores,
+        ...scores,
         total_editorial_score,
         status: total_editorial_score >= MIN_EDITORIAL_SCORE_THRESHOLD ? 'approved' : 'rejected'
     };
 }
 
 async function main() {
-    console.log('🚪 Starting Gatekeeper Scoring Engine...');
+    console.log('🚪 Starting Gatekeeper Scoring Engine (Native Groq API)...');
 
     let rawSignals;
     try {
         const data = await fs.readFile(RAW_SIGNALS_PATH, 'utf-8');
         rawSignals = JSON.parse(data);
     } catch (error) {
-        console.error(`Error reading ${RAW_SIGNALS_PATH}:`, error.message);
-        // Fallback dummy signal if raw_signals.json missing
+        console.warn(`Could not read ${RAW_SIGNALS_PATH}:`, error.message);
         rawSignals = [{
             id: 'sig_fallback_001',
             headline: 'AI Infrastructure Capex Shift in Enterprise Tech',
@@ -102,7 +107,7 @@ async function main() {
         }];
     }
 
-    console.log(`Processing ${rawSignals.length} signals...`);
+    console.log(`Processing ${rawSignals.length} signals with Groq Llama 3 70B...`);
     const scoredSignals = [];
 
     for (const signal of rawSignals) {
