@@ -10,18 +10,18 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   SANDBOX_MODE: ${{ secrets.SANDBOX_MODE || 'true' }}
-  FINANCIAL_MODE: ${{ secrets.FINANCIAL_MODE }}
-  MIN_EDITORIAL_SCORE_THRESHOLD: ${{ secrets.MIN_EDITORIAL_SCORE_THRESHOLD }}
-  MAX_DAILY_NET_COMPUTE_LIMIT_EUR: ${{ secrets.MAX_DAILY_NET_COMPUTE_LIMIT_EUR }}
+  FINANCIAL_MODE: ${{ secrets.FINANCIAL_MODE || 'NET_EXCLUSIVE' }}
+  MIN_EDITORIAL_SCORE_THRESHOLD: ${{ secrets.MIN_EDITORIAL_SCORE_THRESHOLD || '18' }}
+  MAX_DAILY_NET_COMPUTE_LIMIT_EUR: ${{ secrets.MAX_DAILY_NET_COMPUTE_LIMIT_EUR || '10.00' }}
   NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
   PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
   PLUNK_PUBLIC_API_KEY: ${{ secrets.PLUNK_PUBLIC_API_KEY }}
   PLUNK_SECRET_API_KEY: ${{ secrets.PLUNK_SECRET_API_KEY }}
-  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || '8707626369:AAFRdo6pNaFl-fcgavVTt97Yzbfm2UiPrFo' }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID || '846896390' }}
   PAVED_API_KEY: ${{ secrets.PAVED_API_KEY }}
   LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
-  LEMON_SQUEEZY_SHOP_ID: ${{ secrets.LEMON_SQUEEZY_SHOP_ID }}
+  LEMON_SQUEEZY_SHOP_ID: ${{ secrets.LEMON_SQUEEZY_SHOP_ID || 'futrdesk.lemonsqueezy.com' }}
   PARTNERSTACK_API_KEY: ${{ secrets.PARTNERSTACK_API_KEY }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   SUPABASE_PROJECT_URL: ${{ secrets.SUPABASE_PROJECT_URL }}
@@ -51,13 +51,16 @@ jobs:
       - name: Install Dependencies
         run: npm ci || npm install
 
-      - name: Run Sensor Engine (Signal Ingestion)
+      - name: Step 1 - Sensor Engine (Signal Ingestion)
         run: node 01_Research/sensor_engine.mjs
 
-      - name: Run Editorial Engine (Script Generation)
+      - name: Step 2 - Gatekeeper (Editorial Scoring)
+        run: node 01_Research/gatekeeper.mjs
+
+      - name: Step 3 - Editorial Engine (Script Generation)
         run: node 03_Scripts/editorial_engine.mjs
 
-      - name: Run Distribution Engine (Sandbox Preview & Telegram Dispatch)
+      - name: Step 4 - Distribution Engine (Sandbox Preview & Telegram Dispatch)
         run: node 07_Published/distribution_engine.mjs
 
   production_run:
@@ -80,13 +83,13 @@ jobs:
       - name: Install Dependencies
         run: npm ci || npm install
 
-      - name: Run Asset Factory (Voice & Graphics Blueprinting)
+      - name: Step 1 - Asset Factory (Voice & Graphics Blueprinting)
         run: node 03_Scripts/asset_factory.mjs
 
-      - name: Run Live Distribution Engine
+      - name: Step 2 - Live Distribution Engine
         run: node 07_Published/distribution_engine.mjs
 
-      - name: Run Monetization Engine (Affiliate & Sponsor Linking)
+      - name: Step 3 - Monetization Engine (Affiliate & Sponsor Linking)
         run: node 10_Products/monetization_engine.mjs
 
       - name: Send Completion Notification to Telegram
