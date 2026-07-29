@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         const text = rawText.toLowerCase();
 
         const rawExpectedId = String(process.env.TELEGRAM_CHAT_ID || '').replace(/^@/, '').trim().toLowerCase();
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const botToken = process.env.TELEGRAM_BOT_TOKEN || '8707626369:AAFRdo6pNaFl-fcgavVTt97Yzbfm2UiPrFo';
         const ghPat = process.env.GH_PAT || process.env.GITHUB_PAT || process.env.GITHUB_TOKEN;
         const repo = process.env.GITHUB_REPO || 'TheFair1985/futrdesk';
 
@@ -54,15 +54,17 @@ export default async function handler(req, res) {
         // Helper command: /id or /myid or /start -> Returns user Chat ID & Auth status
         if (text === '/id' || text === '/myid' || text === '/start' || text === '/help') {
             const authStatus = isAuthorized ? '✅ *Authorized Co-Founder*' : '⚠️ *Unauthorized*';
+            const patStatus = ghPat ? '✅ *Configured*' : '⚠️ *Missing (Set GH_PAT in Vercel)*';
             const replyMsg = `🤖 *Future Desk OS Bridge Active*\n\n` +
                              `📍 *Your Numeric Chat ID:* \`${chatId}\`\n` +
                              `👤 *Username:* @${chatUsername || 'N/A'}\n` +
-                             `🔐 *Status:* ${authStatus}\n\n` +
+                             `🔐 *Co-Founder Status:* ${authStatus}\n` +
+                             `🔑 *GitHub Token Status:* ${patStatus}\n\n` +
                              `Commands:\n` +
-                             `• \`/id\` - Show Chat ID & Auth Status\n` +
+                             `• \`/id\` - Show Chat ID & Status\n` +
                              `• \`/approve\` - Launch Autonomous Production Run on GitHub`;
             await sendTelegramMessage(botToken, chatId, replyMsg);
-            return res.status(200).json({ status: 'success', chatId: chatId, isAuthorized: isAuthorized });
+            return res.status(200).json({ status: 'success', chatId: chatId, isAuthorized: isAuthorized, hasPat: !!ghPat });
         }
 
         if (!isAuthorized) {
@@ -74,8 +76,8 @@ export default async function handler(req, res) {
         // Handle /approve command
         if (text === '/approve' || text.startsWith('/approve') || text === 'approve') {
             if (!ghPat) {
-                console.error('[Webhook] Missing GH_PAT environment variable');
-                await sendTelegramMessage(botToken, chatId, '⚠️ *Configuration Error:* GitHub Access Token (\`GH_PAT\`) is missing in Vercel environment variables.');
+                console.error('[Webhook] Missing GH_PAT environment variable in Vercel');
+                await sendTelegramMessage(botToken, chatId, '⚠️ *Missing GH_PAT in Vercel!*\n\nTo allow Vercel to trigger GitHub Actions, add your Personal Access Token in Vercel Dashboard:\n**Name:** `GH_PAT`\n**Value:** `ghp_xxxxxxxxxxxx`');
                 return res.status(200).json({ error: 'Missing GitHub Access Token' });
             }
 
