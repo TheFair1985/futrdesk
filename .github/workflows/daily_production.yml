@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   SANDBOX_MODE: ${{ secrets.SANDBOX_MODE || 'true' }}
   FINANCIAL_MODE: ${{ secrets.FINANCIAL_MODE }}
   MIN_EDITORIAL_SCORE_THRESHOLD: ${{ secrets.MIN_EDITORIAL_SCORE_THRESHOLD }}
