@@ -41,12 +41,12 @@ export default async function handler(req, res) {
 
         console.log(`[Webhook] Received message from chatId: "${chatId}" (@${chatUsername}). Content: "${rawText}"`);
 
-        // Helper command: /id or /myid or /start -> Returns the user's Chat ID immediately
-        if (text === '/id' || text === '/myid' || text === '/start') {
+        // Helper command: /id or /myid or /start -> Returns user Chat ID immediately
+        if (text === '/id' || text === '/myid' || text === '/start' || text === '/help') {
             const replyMsg = `🤖 *Future Desk OS Bridge Active*\n\n` +
                              `📍 *Your Numeric Chat ID:* \`${chatId}\`\n` +
                              `👤 *Username:* @${chatUsername || 'N/A'}\n\n` +
-                             `Copy this Chat ID and set \`TELEGRAM_CHAT_ID=${chatId}\` in your Vercel & GitHub environment variables.\n\n` +
+                             `Copy this Chat ID and set \`TELEGRAM_CHAT_ID=${chatId}\` in Vercel & GitHub environment variables.\n\n` +
                              `Commands:\n` +
                              `• \`/id\` - Show Chat ID\n` +
                              `• \`/approve\` - Launch Autonomous Production Run on GitHub`;
@@ -54,23 +54,24 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: 'success', chatId: chatId });
         }
 
-        // Security / Verification Check (if TELEGRAM_CHAT_ID is configured)
+        // Security / Verification Check
         const isAuthorized = !rawExpectedId || 
                              chatId === rawExpectedId || 
                              (chatUsername && chatUsername.toLowerCase() === rawExpectedId.toLowerCase());
 
         if (!isAuthorized) {
             console.warn(`[Webhook] Unauthorized attempt from chatId: ${chatId} (@${chatUsername}). Expected: ${rawExpectedId}`);
-            await sendTelegramMessage(botToken, chatId, `⚠️ *Unauthorized Chat ID*\nYour Chat ID is \`${chatId}\`. Please update \`TELEGRAM_CHAT_ID\` in Vercel.`);
-            return res.status(403).json({ error: 'Unauthorized Chat ID', yourChatId: chatId });
+            await sendTelegramMessage(botToken, chatId, `⚠️ *Unauthorized Access*\nYour Chat ID is \`${chatId}\`. Please update \`TELEGRAM_CHAT_ID\` in Vercel to match this ID.`);
+            // Return 200 to Telegram API so webhook delivery isn't flagged as failed by Telegram
+            return res.status(200).json({ status: 'unauthorized', yourChatId: chatId });
         }
 
         // Handle /approve command
         if (text === '/approve' || text.startsWith('/approve') || text === 'approve') {
             if (!ghPat) {
                 console.error('[Webhook] Missing GH_PAT environment variable');
-                await sendTelegramMessage(botToken, chatId, '⚠️ *Error:* GitHub Access Token (\`GH_PAT\`) is missing in Vercel environment variables.');
-                return res.status(500).json({ error: 'Missing GitHub Access Token' });
+                await sendTelegramMessage(botToken, chatId, '⚠️ *Configuration Error:* GitHub Access Token (\`GH_PAT\`) is missing in Vercel environment variables.');
+                return res.status(200).json({ error: 'Missing GitHub Access Token' });
             }
 
             // Trigger GitHub Repository Dispatch Event
@@ -100,7 +101,7 @@ export default async function handler(req, res) {
                 const errorText = await ghResponse.text();
                 console.error(`[Webhook] GitHub API dispatch failed [${ghResponse.status}]: ${errorText}`);
                 await sendTelegramMessage(botToken, chatId, `❌ *GitHub Dispatch Failed (${ghResponse.status}):*\n${errorText}`);
-                return res.status(500).json({ error: 'GitHub dispatch failed', details: errorText });
+                return res.status(200).json({ error: 'GitHub dispatch failed', details: errorText });
             }
         }
 
@@ -110,7 +111,7 @@ export default async function handler(req, res) {
 
     } catch (err) {
         console.error('[Webhook Error]', err);
-        return res.status(500).json({ error: 'Internal Server Error', message: err.message });
+        return res.status(200).json({ error: 'Internal Server Error', message: err.message });
     }
 }
 
