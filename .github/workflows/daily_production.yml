@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 
 env:
+  SANDBOX_MODE: ${{ secrets.SANDBOX_MODE || 'true' }}
   FINANCIAL_MODE: ${{ secrets.FINANCIAL_MODE }}
   MIN_EDITORIAL_SCORE_THRESHOLD: ${{ secrets.MIN_EDITORIAL_SCORE_THRESHOLD }}
   MAX_DAILY_NET_COMPUTE_LIMIT_EUR: ${{ secrets.MAX_DAILY_NET_COMPUTE_LIMIT_EUR }}
@@ -30,9 +31,11 @@ env:
 
 jobs:
   morning_dispatch:
-    name: Morning Signal Ingestion & Editorial Preview
+    name: Morning Signal Ingestion & Dry Run Sandbox Preview
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    env:
+      SANDBOX_MODE: 'true'
 
     steps:
       - name: Checkout Codebase
@@ -53,19 +56,15 @@ jobs:
       - name: Run Editorial Engine (Script Generation)
         run: node 03_Scripts/editorial_engine.mjs
 
-      - name: Send Preview Notification to Telegram
-        if: success()
-        run: |
-          MESSAGE="🌅 *Future Desk OS Morning Report*%0A%0AInputs ingested & Editorial Script generated.%0A%0A*Action Required:* Reply with \`/approve\` to launch Autonomous Production Run."
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d "text=${MESSAGE}" \
-            -d "parse_mode=Markdown"
+      - name: Run Distribution Engine (Sandbox Preview & Telegram Dispatch)
+        run: node 07_Published/distribution_engine.mjs
 
   production_run:
-    name: Full Autonomous Production Run
+    name: Full Autonomous Live Production Run
     if: github.event_name == 'repository_dispatch' && github.event.action == 'telegram_approve'
     runs-on: ubuntu-latest
+    env:
+      SANDBOX_MODE: 'false'
 
     steps:
       - name: Checkout Codebase
@@ -83,7 +82,7 @@ jobs:
       - name: Run Asset Factory (Voice & Graphics Blueprinting)
         run: node 03_Scripts/asset_factory.mjs
 
-      - name: Run Distribution Engine (Social Media & Newsletter Packaging)
+      - name: Run Live Distribution Engine
         run: node 07_Published/distribution_engine.mjs
 
       - name: Run Monetization Engine (Affiliate & Sponsor Linking)
@@ -92,8 +91,8 @@ jobs:
       - name: Send Completion Notification to Telegram
         if: success()
         run: |
-          MESSAGE="🚀 *Future Desk OS Production Run Complete!*%0A%0AAssets generated, multi-channel distribution packaged, and monetization report updated."
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+          MESSAGE="🚀 *Future Desk OS Production Run Complete!*%0A%0AAssets generated, live distribution executed, and monetization report updated."
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN || '8707626369:AAFRdo6pNaFl-fcgavVTt97Yzbfm2UiPrFo' }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID || '846896390' }}" \
             -d "text=${MESSAGE}" \
             -d "parse_mode=Markdown"
