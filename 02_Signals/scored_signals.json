@@ -1,0 +1,62 @@
+[
+  {
+    "id": "328e8043-9938-418f-a2b2-59d6152190b2",
+    "timestamp_ingested": "2026-07-28T11:52:03.934Z",
+    "source_url": "https://finance.yahoo.com/technology/ai/articles/fitch-warns-ai-market-correction-103630010.html",
+    "headline": "Fitch warns AI market correction emerging as major global credit risk",
+    "causal_pillar": "Decision_Systems",
+    "surprise_score": 2,
+    "scale_score": 5,
+    "timeliness_score": 4,
+    "longevity_score": 4,
+    "actionability_score": 4,
+    "total_editorial_score": 19,
+    "status": "approved",
+    "net_processing_cost_eur": 0.0015
+  },
+  {
+    "id": "210800cf-08d2-40a5-8f28-db50c0b04c54",
+    "timestamp_ingested": "2026-07-28T11:52:03.934Z",
+    "source_url": "https://finance.yahoo.com/technology/ai/articles/amazon-winds-down-most-flagship-103406019.html",
+    "headline": "Amazon winds down most flagship AI models in strategy overhaul, Business Insider reports",
+    "causal_pillar": "Decision_Systems",
+    "surprise_score": 4,
+    "scale_score": 4,
+    "timeliness_score": 4,
+    "longevity_score": 4,
+    "actionability_score": 4,
+    "total_editorial_score": 20,
+    "status": "approved",
+    "net_processing_cost_eur": 0.0015
+  },
+  {
+    "id": "34e0ff82-f206-45f6-9cdd-de21c7f788f4",
+    "timestamp_ingested": "2026-07-28T11:52:03.933Z",
+    "source_url": "https://finance.yahoo.com/technology/ai/articles/brookfield-sees-6-5-gw-113832545.html",
+    "headline": "Brookfield sees 6.5 GW of AI data-centre capacity coming online in India",
+    "causal_pillar": "Intelligence",
+    "surprise_score": 3,
+    "scale_score": 4,
+    "timeliness_score": 4,
+    "longevity_score": 4,
+    "actionability_score": 3,
+    "total_editorial_score": 18,
+    "status": "approved",
+    "net_processing_cost_eur": 0.0015
+  },
+  {
+    "id": "b0eaf382-d498-40e2-a4e8-ef492d384ed7",
+    "timestamp_ingested": "2026-07-28T11:52:03.932Z",
+    "source_url": "https://www.cnbc.com/2026/07/24/moodys-ai-spending-credit-quality-amazon-meta-alphabet.html",
+    "headline": "Moodyaposs says aposunprecedentedapos AI spending threatens credit quality of Amazon, Meta, Alphabet and others",
+    "causal_pillar": "Intelligence",
+    "surprise_score": 2,
+    "scale_score": 5,
+    "timeliness_score": 4,
+    "longevity_score": 4,
+    "actionability_score": 3,
+    "total_editorial_score": 18,
+    "status": "approved",
+    "net_processing_cost_eur": 0.0015
+  }
+]

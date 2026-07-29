@@ -1,0 +1,11 @@
+# Ignore local environment files
+.env*.local
+
+# Ignore node_modules
+node_modules/
+
+# Ignore system files
+.DS_Store
+
+# Ignore the archive
+/12_Archive/*

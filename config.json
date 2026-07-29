@@ -1,0 +1,104 @@
+{
+  "system_name": "Future Desk OS",
+  "version": "1.0.0-build",
+  "target_market": "North_America_Global",
+  "language": "en-US",
+  "core_philosophy": "Observe, Think, Create, Learn - We process tomorrow's information.",
+  "causal_pillars": [
+    "Intelligence",
+    "Capital",
+    "Infrastructure",
+    "Society",
+    "Decision_Systems"
+  ],
+  "financial_logic": "NET_VALUES_EXCLUSIVE",
+  "database_schema": {
+    "signals": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "timestamp_ingested": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "headline": {
+          "type": "string"
+        },
+        "causal_pillar": {
+          "type": "string",
+          "enum": [
+            "Intelligence",
+            "Capital",
+            "Infrastructure",
+            "Society",
+            "Decision_Systems"
+          ]
+        },
+        "surprise_score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "scale_score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "timeliness_score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "longevity_score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "actionability_score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "total_editorial_score": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 25
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "raw",
+            "scored",
+            "approved",
+            "rejected"
+          ]
+        },
+        "net_processing_cost_eur": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "timestamp_ingested",
+        "source_url",
+        "headline",
+        "causal_pillar",
+        "surprise_score",
+        "scale_score",
+        "timeliness_score",
+        "longevity_score",
+        "actionability_score",
+        "total_editorial_score",
+        "status",
+        "net_processing_cost_eur"
+      ]
+    }
+  }
+}
