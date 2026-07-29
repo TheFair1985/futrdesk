@@ -34,35 +34,40 @@ export default async function handler(req, res) {
         const rawText = (message.text || callbackData || '').trim();
         const text = rawText.toLowerCase();
 
-        const rawExpectedId = String(process.env.TELEGRAM_CHAT_ID || '').replace(/^@/, '').trim();
+        const rawExpectedId = String(process.env.TELEGRAM_CHAT_ID || '').replace(/^@/, '').trim().toLowerCase();
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
         const ghPat = process.env.GH_PAT || process.env.GITHUB_PAT || process.env.GITHUB_TOKEN;
         const repo = process.env.GITHUB_REPO || 'TheFair1985/futrdesk';
 
         console.log(`[Webhook] Received message from chatId: "${chatId}" (@${chatUsername}). Content: "${rawText}"`);
 
-        // Helper command: /id or /myid or /start -> Returns user Chat ID immediately
+        // Known authorized Co-Founder IDs / Usernames
+        const authorizedList = [
+            '846896390',
+            'thefair1985',
+            rawExpectedId
+        ].filter(Boolean);
+
+        const isAuthorized = authorizedList.includes(chatId) || 
+                             (chatUsername && authorizedList.includes(chatUsername.toLowerCase()));
+
+        // Helper command: /id or /myid or /start -> Returns user Chat ID & Auth status
         if (text === '/id' || text === '/myid' || text === '/start' || text === '/help') {
+            const authStatus = isAuthorized ? '✅ *Authorized Co-Founder*' : '⚠️ *Unauthorized*';
             const replyMsg = `🤖 *Future Desk OS Bridge Active*\n\n` +
                              `📍 *Your Numeric Chat ID:* \`${chatId}\`\n` +
-                             `👤 *Username:* @${chatUsername || 'N/A'}\n\n` +
-                             `Copy this Chat ID and set \`TELEGRAM_CHAT_ID=${chatId}\` in Vercel & GitHub environment variables.\n\n` +
+                             `👤 *Username:* @${chatUsername || 'N/A'}\n` +
+                             `🔐 *Status:* ${authStatus}\n\n` +
                              `Commands:\n` +
-                             `• \`/id\` - Show Chat ID\n` +
+                             `• \`/id\` - Show Chat ID & Auth Status\n` +
                              `• \`/approve\` - Launch Autonomous Production Run on GitHub`;
             await sendTelegramMessage(botToken, chatId, replyMsg);
-            return res.status(200).json({ status: 'success', chatId: chatId });
+            return res.status(200).json({ status: 'success', chatId: chatId, isAuthorized: isAuthorized });
         }
 
-        // Security / Verification Check
-        const isAuthorized = !rawExpectedId || 
-                             chatId === rawExpectedId || 
-                             (chatUsername && chatUsername.toLowerCase() === rawExpectedId.toLowerCase());
-
         if (!isAuthorized) {
-            console.warn(`[Webhook] Unauthorized attempt from chatId: ${chatId} (@${chatUsername}). Expected: ${rawExpectedId}`);
-            await sendTelegramMessage(botToken, chatId, `⚠️ *Unauthorized Access*\nYour Chat ID is \`${chatId}\`. Please update \`TELEGRAM_CHAT_ID\` in Vercel to match this ID.`);
-            // Return 200 to Telegram API so webhook delivery isn't flagged as failed by Telegram
+            console.warn(`[Webhook] Unauthorized attempt from chatId: ${chatId} (@${chatUsername}). Expected one of: ${authorizedList.join(', ')}`);
+            await sendTelegramMessage(botToken, chatId, `⚠️ *Unauthorized Access*\nYour Chat ID is \`${chatId}\` (@${chatUsername}). Please update \`TELEGRAM_CHAT_ID\` in Vercel.`);
             return res.status(200).json({ status: 'unauthorized', yourChatId: chatId });
         }
 
