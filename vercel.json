@@ -5,6 +5,10 @@
     {
       "src": "/api/webhook",
       "dest": "/api/webhook.mjs"
+    },
+    {
+      "src": "/api/approve",
+      "dest": "/api/approve.mjs"
     }
   ],
   "headers": [

@@ -6,6 +6,7 @@ node_modules/
 
 # Ignore system files
 .DS_Store
+.tmp.driveupload/
 
 # Ignore the archive
 /12_Archive/*

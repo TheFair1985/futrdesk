@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "instanceId": "futrdesk-os-autonomous-pipeline",
+    "templateId": "futrdesk_social_distribution"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "futrdesk-distribution",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "id": "node-1-webhook-trigger"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.video_download_url }}",
+        "responseFormat": "file",
+        "dataPropertyName": "video_asset",
+        "options": {}
+      },
+      "name": "Asset Downloader",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        400,
+        300
+      ],
+      "id": "node-2-asset-downloader"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.body.linkedin_post }}",
+        "binaryPropertyName": "video_asset",
+        "additionalFields": {}
+      },
+      "name": "LinkedIn Publisher",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        600,
+        300
+      ],
+      "id": "node-3-linkedin-publisher"
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "name": "Stagger Delay 1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        800,
+        300
+      ],
+      "id": "node-wait-1"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.body.x_thread_tweet_1 }}",
+        "binaryData": true,
+        "binaryPropertyName": "video_asset",
+        "additionalFields": {}
+      },
+      "name": "X/Twitter Publisher",
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ],
+      "id": "node-4-twitter-publisher"
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "name": "Stagger Delay 2",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        300
+      ],
+      "id": "node-wait-2"
+    },
+    {
+      "parameters": {
+        "title": "={{ $json.body.yt_shorts_meta.title }}",
+        "description": "={{ $json.body.yt_shorts_meta.description }}",
+        "binaryPropertyName": "video_asset",
+        "additionalFields": {}
+      },
+      "name": "YouTube Shorts Publisher",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        300
+      ],
+      "id": "node-5-youtube-publisher"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Asset Downloader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Asset Downloader": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Publisher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Publisher": {
+      "main": [
+        [
+          {
+            "node": "Stagger Delay 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stagger Delay 1": {
+      "main": [
+        [
+          {
+            "node": "X/Twitter Publisher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "X/Twitter Publisher": {
+      "main": [
+        [
+          {
+            "node": "Stagger Delay 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stagger Delay 2": {
+      "main": [
+        [
+          {
+            "node": "YouTube Shorts Publisher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

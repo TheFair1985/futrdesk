@@ -1,6 +1,8 @@
 
 import { promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
+import { ensureFileSystem } from '../init_system.mjs';
+import { filterDuplicateSignals } from './dedup_engine.mjs';
 
 // Load environment variables safely (if .env.local exists locally)
 try {
@@ -230,6 +232,7 @@ async function saveSignals(signals) {
 // --- MAIN EXECUTION ---
 
 async function main() {
+    await ensureFileSystem();
     console.log('Starting International Sensor Engine...');
     
     const configData = await fs.readFile(CONFIG_PATH, 'utf-8');
@@ -250,10 +253,13 @@ async function main() {
         .map(signal => structureSignal(signal, config))
         .filter(Boolean); // Filter out discarded signals
 
+    // Deduplicate signals against persistent SHA-256 hash registry
+    const uniqueSignals = await filterDuplicateSignals(structuredSignals);
+
     // Enforce hard limit for pillar distribution (max 40% per pillar)
     const MAX_PILLAR_PERCENTAGE = 0.4;
     const MIN_TOTAL_SIGNALS = 30;
-    let finalSignals = [...structuredSignals];
+    let finalSignals = [...uniqueSignals];
 
     let attempts = 0;
     const MAX_ATTEMPTS = 5; // Prevent infinite loops

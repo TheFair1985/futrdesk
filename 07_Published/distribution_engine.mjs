@@ -1,4 +1,12 @@
 import { promises as fs } from 'fs';
+import { ensureFileSystem } from '../init_system.mjs';
+import { runHealthCheck } from '../05_Database/health_check.mjs';
+import { createNotionApprovalCard } from '../05_Database/notion_gateway.mjs';
+import { renderVideoFactory } from '../04_Visuals/video_factory.mjs';
+import { uploadVideoToCloud } from '../04_Visuals/asset_attacher.mjs';
+import { sendPlunkNewsletter } from './distributors/plunk_distributor.mjs';
+import { publishSocialContent } from './distributors/social_publisher.mjs';
+import { dispatchToN8N } from './distributors/webhook_dispatcher.mjs';
 
 const SCRIPT_JSON_PATH = './03_Scripts/EP03_Top_Signal_Script.json';
 const DISTRIBUTION_PACKAGE_JSON_PATH = './07_Published/EP06_Distribution_Package.json';
@@ -144,36 +152,98 @@ async function generateNewsletterLead(leadingQuestion, topSignal) {
     return callGroq(prompt, fallback);
 }
 
-// Helper to push preview to Telegram
-async function sendTelegramPreview(botToken, chatId, messageText) {
-    if (!botToken || !chatId) {
-        console.warn('⚠️ [Sandbox Telegram] Bot Token or Chat ID missing. Skipping preview send.');
-        return;
-    }
-    try {
-        const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: messageText,
-                parse_mode: 'Markdown'
-            })
-        });
-        const data = await res.json();
-        if (data.ok) {
-            console.log('✅ [Sandbox Telegram] Distribution package preview sent to Co-Founder Telegram chat.');
-        } else {
-            console.warn('⚠️ [Sandbox Telegram] Failed to send preview:', data.description);
+// --- 5. KALLAWAY VIDEO-REGIEBUCH GENERATOR ---
+async function generateKallawayRegiebuch(leadingQuestion, topSignal) {
+    const prompt = `
+        DU BIST EIN ELITE-REGISSEUR UND VIDEO-PRODUCER FÜR VIRALE B2B-KURZFİLME UND EDITORIAL VIDEOS (KALLAWAY PROTOKOLL).
+        ERSTELLE EIN VOLLSTÄNDIGES REGIEBUCH IM JSON-FORMAT FÜR FOLGENDES SIGNAL:
+        Headline: "${topSignal.headline}"
+        Pillar: "${topSignal.causal_pillar}"
+        Question: "${leadingQuestion}"
+
+        Das JSON-Objekt MUSS ein Array namens "scenes" enthalten. Jedes Szenen-Objekt MUSS exakt die folgenden 7 Felder haben:
+        "timing", "speaker", "text", "action", "b_roll_topic", "sound_trigger", "highlight_words".
+
+        Respond ONLY with a valid JSON object.
+    `;
+    const fallback = {
+        scenes: [
+            {
+                timing: "00:00 - 00:03",
+                speaker: "Host 1",
+                text: `${topSignal.headline}. Why proprietary models fail ROI expectations.`,
+                action: "Direct eye contact, rapid zoom on Host 1",
+                b_roll_topic: "Dark modern datacenter server racks with blinking LEDs",
+                sound_trigger: "SFX_WHOOSH_HEAVY",
+                highlight_words: ["ROI", "CapEx", "AI"]
+            },
+            {
+                timing: "00:03 - 00:07",
+                speaker: "Host 2",
+                text: `${leadingQuestion}`,
+                action: "Side angle perspective change, raised eyebrow",
+                b_roll_topic: "Executive boardroom glass wall reflection at dusk",
+                sound_trigger: "SFX_RISER_SUBTLE",
+                highlight_words: ["Decision Systems", "Margins"]
+            }
+        ]
+    };
+    return callGroq(prompt, fallback);
+}
+
+// --- 6. MULTI-PLATFORM METADATA MATRIX GENERATOR ---
+async function generateMetadataMatrix(leadingQuestion, topSignal) {
+    const prompt = `
+        DU BIST EIN MULTI-PLATFORM CONTENT DISTRIBUTOR FÜR DAS B2B EXECUTIVE NETWORK "FUTURE DESK OS".
+        ERSTELLE EIN STRUKTURIERTES METADATA-PAKET IM VALIDEN JSON-FORMAT BASIEREND AUF FOLGENDEN SIGNALDATED:
+
+        Leading Question: "${leadingQuestion}"
+        Top Signal Headline: "${topSignal.headline}"
+        Causal Pillar: "${topSignal.causal_pillar}"
+
+        STRENGE ANFORDERUNGEN & JSON SCHEMA:
+        Respond ONLY with a valid JSON object matching this exact schema:
+
+        {
+          "linkedin_post": "Executive Summary format. Starts with a strong counter-intuitive hook sentence, followed by exactly 3 bullet points (key strategic takeaways for C-level leaders), and ends with a single open strategic question. EXPLICIT RULE: NO EXTERNAL URLS OR LINKS ALLOWED INSIDE THIS TEXT BLOCK.",
+          "x_thread_tweet_1": "Provocative hook tweet (MAX 280 CHARACTERS).",
+          "x_thread_tweet_2": "Context and executive call-to-action tweet (MAX 280 CHARACTERS).",
+          "yt_shorts_meta": {
+            "title": "Scroll-stopping title (MAX 60 CHARACTERS, MUST INCLUDE #Shorts)",
+            "description": "3-4 sentences optimized for B2B search intent and algorithm indexability.",
+            "tags": ["Tag1", "Tag2", "Tag3", "Tag4"]
+          },
+          "tiktok_meta": {
+            "description": "Long-tail B2B search SEO focused video caption.",
+            "hashtags": ["#Hashtag1", "#Hashtag2", "#Hashtag3", "#Hashtag4", "#Hashtag5"]
+          },
+          "ig_reels_meta": "High dynamic energy caption for B2B executives, ending with 'Link in Bio', followed by 3-5 niche B2B hashtags."
         }
-    } catch (err) {
-        console.warn('⚠️ [Sandbox Telegram] Error sending preview:', err.message);
-    }
+    `;
+
+    const fallback = {
+        linkedin_post: `🚀 Executive Briefing: ${topSignal.causal_pillar} Shift\n\nSignal: "${topSignal.headline}"\n\nKey Strategic Takeaways:\n• 1. Operational CapEx must adapt to rapid intelligence commoditization.\n• 2. Workflow layer architecture defends long-term margins over proprietary model ownership.\n• 3. CFOs must audit custom LLM maintenance costs against price-performance APIs.\n\nHow is your executive board re-evaluating capital allocation for internal decision systems this quarter?`,
+        x_thread_tweet_1: `1/2 Signal Alert: ${topSignal.headline}. Owning your foundation model isn't moat insurance—it's a CapEx trap for enterprise leaders.`,
+        x_thread_tweet_2: `2/2 Shift from model-centric to workflow-centric design. Decouple core logic and dynamically route tasks to defend margins. Follow @FutureDeskOS for daily B2B intelligence.`,
+        yt_shorts_meta: {
+            title: `Why Enterprise AI CapEx Fails ROI #Shorts`,
+            description: `Amazon's retreat from flagship AI models highlights a critical lesson for enterprise leaders. Learn why model-agnostic workflows defend long-term B2B margins.`,
+            tags: ["#EnterpriseAI", "#B2BStrategy", "#CapEx", "#FutureDeskOS"]
+        },
+        tiktok_meta: {
+            description: `B2B Enterprise AI strategy breakdown: Why model-agnostic operational workflows outperform proprietary foundation models in Q3.`,
+            hashtags: ["#EnterpriseAI", "#B2BTech", "#ExecutiveLeadership", "#CapEx", "#FutureDeskOS"]
+        },
+        ig_reels_meta: `Stop over-capitalizing custom LLMs! Enterprise leaders are pivoting to model-agnostic decision workflows to defend Q3 margins. Full analysis & Link in Bio #B2BStrategy #ExecutiveBriefing #EnterpriseAI #FutureDeskOS`
+    };
+
+    return callGroq(prompt, fallback);
 }
 
 // --- MAIN FUNCTION ---
 async function main() {
+    await ensureFileSystem();
+    await runHealthCheck();
     console.log('🚀 Starting Native Groq Cloud AI Distribution Engine...');
 
     const isSandboxMode = process.env.SANDBOX_MODE !== 'false';
@@ -203,20 +273,32 @@ async function main() {
     let totalLlmCost = 0;
     const distributionPackage = {};
 
-    console.log('Generating YouTube Shorts / TikTok / Reels metadata with Groq...');
-    distributionPackage.videoMetadata = await generateVideoMetadata(leadingQuestion, topSignal);
+    console.log('Generating Multi-Platform Metadata Matrix with Groq...');
+    distributionPackage.metadataMatrix = await generateMetadataMatrix(leadingQuestion, topSignal);
     totalLlmCost += NET_COST_PER_LLM_CALL;
 
-    console.log('Generating LinkedIn post with Groq...');
-    distributionPackage.linkedInPost = await generateLinkedInPost(leadingQuestion, topSignal);
-    totalLlmCost += NET_COST_PER_LLM_CALL;
-
-    console.log('Generating X (Twitter) thread with Groq...');
-    distributionPackage.xThread = await generateXThread(leadingQuestion, topSignal);
-    totalLlmCost += NET_COST_PER_LLM_CALL;
+    // Backwards compatibility mappings for existing downstream components
+    distributionPackage.videoMetadata = {
+        titles: [distributionPackage.metadataMatrix.yt_shorts_meta?.title || 'Future Desk OS Short'],
+        description: distributionPackage.metadataMatrix.yt_shorts_meta?.description || '',
+        hashtags: distributionPackage.metadataMatrix.yt_shorts_meta?.tags || ['#B2B', '#FutureDeskOS']
+    };
+    distributionPackage.linkedInPost = {
+        post: distributionPackage.metadataMatrix.linkedin_post
+    };
+    distributionPackage.xThread = {
+        thread: [
+            distributionPackage.metadataMatrix.x_thread_tweet_1,
+            distributionPackage.metadataMatrix.x_thread_tweet_2
+        ]
+    };
 
     console.log('Generating Newsletter lead section with Groq...');
     distributionPackage.newsletterLead = await generateNewsletterLead(leadingQuestion, topSignal);
+    totalLlmCost += NET_COST_PER_LLM_CALL;
+
+    console.log('Generating Kallaway Video-Regiebuch with Groq...');
+    distributionPackage.kallawayRegiebuch = await generateKallawayRegiebuch(leadingQuestion, topSignal);
     totalLlmCost += NET_COST_PER_LLM_CALL;
 
     distributionPackage.metadata = {
@@ -238,33 +320,47 @@ async function main() {
     await fs.writeFile(DISTRIBUTION_PACKAGE_MD_PATH, markdownContent);
     console.log(`Saved distribution package Markdown to ${DISTRIBUTION_PACKAGE_MD_PATH}`);
 
-    // --- ROUTING WEICHE: SANDBOX vs LIVE ---
-    if (isSandboxMode) {
-        console.log('\n🔒 [SANDBOX WEICHE ACTIVE]: External API calls (LinkedIn, Plunk, X) BLOCKED.');
-        
-        const shopId = process.env.LEMON_SQUEEZY_SHOP_ID || 'futrdesk.lemonsqueezy.com';
-        const botToken = process.env.TELEGRAM_BOT_TOKEN || '8707626369:AAFRdo6pNaFl-fcgavVTt97Yzbfm2UiPrFo';
-        const chatId = process.env.TELEGRAM_CHAT_ID || '846896390';
+    // --- REMOTION VIDEO FACTORY RENDERING ---
+    console.log('\n🎬 Triggering Remotion Video Factory Engine...');
+    const videoResult = await renderVideoFactory(distributionPackage);
+    distributionPackage.renderedVideoPath = videoResult.videoPath;
 
-        const previewMsg = 
-            `📦 *Future Desk OS - Groq Cloud Dry Run Bundle*\n\n` +
-            `🎯 *Top Signal:* "${topSignal.headline}"\n` +
-            `🏛 *Pillar:* ${topSignal.causal_pillar}\n\n` +
-            `💼 *LinkedIn Hook Preview:*\n` +
-            `_${(distributionPackage.linkedInPost.post || '').split('\n')[0]}_\n\n` +
-            `📰 *Newsletter Lead Snippet:*\n` +
-            `_${(distributionPackage.newsletterLead.article || '').substring(0, 160)}..._\n\n` +
-            `🎥 *Hero Video Title:* ${distributionPackage.videoMetadata.titles[0] || 'N/A'}\n\n` +
-            `🔗 *PartnerStack & Lemon Squeezy Affiliate CTA:*\n` +
-            `https://${shopId}/b2b-toolkit\n\n` +
-            `---------------------------------\n` +
-            `⚠️ *Sandbox Mode aktiv. Antworte mit /approve, um live zu gehen.*`;
+    // --- CLOUD ASSET UPLOAD ---
+    console.log('\n☁️ Uploading Rendered Video Asset to Supabase Cloud Storage...');
+    const cloudResult = await uploadVideoToCloud(distributionPackage.renderedVideoPath);
+    distributionPackage.video_download_url = cloudResult.video_download_url;
 
-        await sendTelegramPreview(botToken, chatId, previewMsg);
+    // --- NOTION APPROVAL CARD DISPATCH ---
+    console.log('\n📌 Writing Content Package to Notion Approval Center...');
+    const contentPackage = {
+        title: distributionPackage.videoMetadata?.titles?.[0] || topSignal.headline || "Future Desk OS Editorial",
+        linkedInPost: distributionPackage.linkedInPost,
+        xThread: distributionPackage.xThread,
+        kallawayRegiebuch: distributionPackage.kallawayRegiebuch,
+        videoMetadata: distributionPackage.videoMetadata,
+        newsletterLead: distributionPackage.newsletterLead,
+        status: "Draft",
+        metadata: distributionPackage.metadata
+    };
 
+    const notionResult = await createNotionApprovalCard(contentPackage);
+    if (notionResult.success) {
+        console.log(`✅ Notion Approval Card successfully created! Page ID: ${notionResult.pageId}`);
     } else {
-        console.log('\n🚀 [LIVE WEICHE ACTIVE]: Dispatching posts to LinkedIn, Plunk Newsletter, and X...');
-        console.log('✅ External API posts successfully dispatched.');
+        console.warn(`⚠️ Notion Approval Card dispatch completed with status: ${notionResult.reason || notionResult.error}`);
+    }
+
+    // --- MULTI-PLATFORM LIVE DISTRIBUTION ---
+    console.log('\n📡 Triggering Multi-Platform Live Distribution...');
+    const plunkResult = await sendPlunkNewsletter(distributionPackage);
+    const socialResult = await publishSocialContent(distributionPackage);
+
+    // --- N8N WEBHOOK DISPATCH ---
+    console.log('\n🌐 Dispatching Metadata Payload to n8n Webhook...');
+    if (process.env.N8N_WEBHOOK_URL) {
+        await dispatchToN8N();
+    } else {
+        console.warn('⚠️ [N8N Dispatcher Warning] N8N_WEBHOOK_URL environment variable is missing. Skipping n8n push.');
     }
 
     // --- ABSCHLUSS-REPORT ---
