@@ -25,8 +25,8 @@ function createRichText(text = '') {
  * @returns {Promise<Object>} Notion API response object
  */
 export async function createNotionApprovalCard(contentPackage) {
-    const apiKey = process.env.NOTION_API_KEY;
-    const databaseId = process.env.NOTION_DATABASE_ID;
+    const apiKey = process.env.NOTION_API_KEY?.trim();
+    const databaseId = process.env.NOTION_DATABASE_ID?.trim();
 
     if (!apiKey || !databaseId) {
         console.warn('⚠️ [Notion Gateway] NOTION_API_KEY or NOTION_DATABASE_ID missing. Skipping Notion approval card creation.');

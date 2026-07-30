@@ -20,9 +20,9 @@ export async function publishSocialContent(contentPackage = {}) {
     const videoPath = contentPackage.renderedVideoPath || contentPackage.videoPath || DEFAULT_VIDEO_PATH;
     const hasVideo = existsSync(videoPath);
 
-    const webhookUrl = process.env.MAKE_WEBHOOK_URL || process.env.BUFFER_WEBHOOK_URL || process.env.SOCIAL_WEBHOOK_URL;
-    const linkedInToken = process.env.LINKEDIN_ACCESS_TOKEN;
-    const twitterToken = process.env.TWITTER_BEARER_TOKEN;
+    const webhookUrl = (process.env.MAKE_WEBHOOK_URL || process.env.BUFFER_WEBHOOK_URL || process.env.SOCIAL_WEBHOOK_URL)?.trim();
+    const linkedInToken = process.env.LINKEDIN_ACCESS_TOKEN?.trim();
+    const twitterToken = process.env.TWITTER_BEARER_TOKEN?.trim();
 
     const payload = {
         timestamp: new Date().toISOString(),

@@ -48,7 +48,7 @@ export function sanitizeMetadataPayload(pkg) {
 export async function dispatchToN8N() {
     console.log('🌐 [N8N Dispatcher] Preparing metadata matrix payload for n8n dispatch...');
 
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+    const webhookUrl = process.env.N8N_WEBHOOK_URL?.trim();
     if (!webhookUrl) {
         throw new Error('❌ [N8N Dispatcher Critical Error] N8N_WEBHOOK_URL environment variable is missing in the local environment.');
     }

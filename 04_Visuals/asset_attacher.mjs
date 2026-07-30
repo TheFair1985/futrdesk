@@ -18,11 +18,14 @@ const BUCKET_NAME = 'futrdesk_assets';
  * Initializes Supabase client using environment variables.
  */
 function getSupabaseClient() {
-    const url = process.env.SUPABASE_PROJECT_URL || process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY || 
-                process.env.SUPABASE_SERVICE_KEY || 
-                process.env.SUPABASE_SECRET_KEY || 
-                process.env.SUPABASE_ANON_KEY;
+    const rawUrl = process.env.SUPABASE_PROJECT_URL || process.env.SUPABASE_URL;
+    const rawKey = process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY || 
+                   process.env.SUPABASE_SERVICE_KEY || 
+                   process.env.SUPABASE_SECRET_KEY || 
+                   process.env.SUPABASE_ANON_KEY;
+
+    const url = rawUrl?.trim();
+    const key = rawKey?.trim();
 
     if (!url || !key) {
         console.warn('⚠️ [Asset Attacher Warning] SUPABASE_PROJECT_URL or SUPABASE_SERVICE_ROLE_SECRET_KEY missing.');

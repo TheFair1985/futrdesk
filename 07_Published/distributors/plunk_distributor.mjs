@@ -8,7 +8,7 @@ const DEFAULT_NEWSLETTER_PATH = './09_Newsletter/newsletter_preview.html';
  * @returns {Promise<Object>} Plunk API dispatch result
  */
 export async function sendPlunkNewsletter(contentPackage = {}) {
-    const apiKey = process.env.PLUNK_SECRET_API_KEY || process.env.PLUNK_API_KEY;
+    const apiKey = (process.env.PLUNK_SECRET_API_KEY || process.env.PLUNK_API_KEY)?.trim();
 
     if (!apiKey) {
         console.warn('⚠️ [Plunk Distributor] PLUNK_SECRET_API_KEY is missing. Skipping live newsletter dispatch.');
@@ -37,15 +37,15 @@ export async function sendPlunkNewsletter(contentPackage = {}) {
                     'Future Desk OS — Autonomous Executive Briefing';
 
     try {
-        console.log('📧 [Plunk Distributor] Dispatching newsletter via Plunk REST API (https://api.useplunk.com/v1/sends)...');
-        const response = await fetch('https://api.useplunk.com/v1/sends', {
+        console.log('📧 [Plunk Distributor] Dispatching newsletter via Plunk REST API (https://api.useplunk.com/v1/send)...');
+        const response = await fetch('https://api.useplunk.com/v1/send', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                to: process.env.PLUNK_RECIPIENT_OR_LIST || 'subscribers@futrdesk.com',
+                to: process.env.PLUNK_RECIPIENT_OR_LIST?.trim() || 'subscribers@futrdesk.com',
                 subject: subject,
                 body: htmlContent,
                 name: 'Future Desk OS Briefing'

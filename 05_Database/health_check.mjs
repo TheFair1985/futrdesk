@@ -25,7 +25,7 @@ export async function runHealthCheck() {
     console.log('🩺 [Health Check] Running pre-flight environment & permission checks...');
 
     // 1. Verify required environment variables
-    const missingVars = REQUIRED_ENV_VARS.filter(envVar => !process.env[envVar]);
+    const missingVars = REQUIRED_ENV_VARS.filter(envVar => !process.env[envVar]?.trim());
 
     if (missingVars.length > 0) {
         throw new Error(`[Health Check Failed] Missing required environment variable(s): ${missingVars.join(', ')}`);

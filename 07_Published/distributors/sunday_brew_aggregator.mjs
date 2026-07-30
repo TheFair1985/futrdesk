@@ -57,7 +57,7 @@ export async function getTopWeeklySignals() {
  */
 export async function synthesizeSundayBrewHTML(topSignals) {
     console.log('🤖 [Sunday Brew Step 2/3] Calling Groq API (llama-3.3-70b-versatile) for HTML synthesis...');
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY?.trim();
     if (!apiKey) {
         throw new Error('❌ [Sunday Brew Error] GROQ_API_KEY environment variable is missing.');
     }
@@ -134,12 +134,12 @@ export async function synthesizeSundayBrewHTML(topSignals) {
 export async function generateAndSendSundayBrew() {
     console.log('☕ [Sunday Brew Aggregator] Starting Sunday Morning Brew Execution...');
 
-    const plunkKey = process.env.PLUNK_SECRET_API_KEY;
+    const plunkKey = process.env.PLUNK_SECRET_API_KEY?.trim();
     if (!plunkKey) {
         throw new Error('❌ [Sunday Brew Critical Error] PLUNK_SECRET_API_KEY environment variable is missing.');
     }
 
-    const recipientEmail = process.env.PLUNK_TEST_EMAIL || 'newsletter@futrdesk.com';
+    const recipientEmail = process.env.PLUNK_TEST_EMAIL?.trim() || 'newsletter@futrdesk.com';
     const topSignals = await getTopWeeklySignals();
 
     const newsletterData = await synthesizeSundayBrewHTML(topSignals);
