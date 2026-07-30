@@ -15,7 +15,8 @@ const PREVIEW_HTML_PATH = './07_Published/previews/sunday_brew_preview.html';
 const PLUNK_API_URL = 'https://api.useplunk.com/v1/send';
 
 /**
- * Compiles structured newsletter JSON payload into an email-safe, table-based Master HTML Template.
+ * Compiles structured newsletter JSON payload into an email-safe, table-based Master HTML Template
+ * matching the Mobile App Dashboard UI aesthetic (Obsidian/Charcoal Dark Mode).
  * @param {Object} data - Structured newsletter content from Groq AI
  * @returns {string} Fully compiled HTML document string
  */
@@ -28,22 +29,65 @@ export function renderMasterNewsletterHTML(data = {}) {
     const renderSignalCard = (signal, index) => {
         const title = signal.title || signal.headline || `Signal #${index + 1}`;
         const pillar = signal.causal_pillar || signal.pillar || "Strategic Insight";
+        const score = Math.min(30, Math.max(1, signal.total_editorial_score || signal.score || 25));
+        const scorePercentage = Math.round((score / 30) * 100);
+
         const takeaways = Array.isArray(signal.takeaways) ? signal.takeaways : [signal.takeaway || "Re-evaluate capital allocation and operational workflows."];
 
+        const renderBullet = (text, idx) => {
+            const dotColor = idx % 2 === 0 ? '#10B981' : '#FF3B30';
+            return `
+                <tr style="vertical-align: top;">
+                    <td style="padding: 5px 12px 6px 0; width: 14px;">
+                        <div style="width: 7px; height: 7px; border-radius: 50%; background-color: ${dotColor}; margin-top: 7px;"></div>
+                    </td>
+                    <td style="padding: 4px 0 6px 0; color: #CBD5E1; font-size: 14px; line-height: 1.6; font-family: 'Inter', -apple-system, sans-serif;">
+                        ${text}
+                    </td>
+                </tr>
+            `;
+        };
+
         return `
-            <!-- Signal Card ${index + 1} -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px; background-color: #1E293B; border-radius: 8px; border-left: 4px solid #F5A623;">
+            <!-- Dashboard Activity Card ${index + 1} -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px; background-color: #0F172A; border-radius: 12px; border: 1px solid #1E293B; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);">
                 <tr>
-                    <td style="padding: 20px;">
-                        <span style="display: inline-block; padding: 4px 10px; background-color: rgba(245, 166, 35, 0.15); color: #F5A623; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; margin-bottom: 8px;">
-                            ${pillar}
-                        </span>
-                        <h3 style="margin: 6px 0 12px 0; color: #FFFFFF; font-size: 18px; line-height: 1.3; font-weight: 600;">
+                    <td style="padding: 24px;">
+                        <!-- Top Metadata Row: Pill Badge + Score Meter -->
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 14px;">
+                            <tr>
+                                <td style="text-align: left; vertical-align: middle;">
+                                    <span style="display: inline-block; padding: 4px 12px; background-color: rgba(0, 242, 254, 0.12); border: 1px solid rgba(0, 242, 254, 0.3); color: #00F2FE; font-size: 11px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 1px; border-radius: 20px;">
+                                        ${pillar}
+                                    </span>
+                                </td>
+                                <td style="text-align: right; vertical-align: middle; width: 150px;">
+                                    <div style="display: inline-block; text-align: right; width: 100%;">
+                                        <div style="margin-bottom: 4px;">
+                                            <span style="font-size: 10px; color: #64748B; font-weight: 700; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">SCORE: </span>
+                                            <span style="font-size: 11px; font-weight: 700; color: #00F2FE; font-family: 'Space Grotesk', monospace;">${score}/30</span>
+                                        </div>
+                                        <!-- 4px High Metric Score Bar -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #1E293B; border-radius: 4px; height: 4px; overflow: hidden;">
+                                            <tr>
+                                                <td style="width: ${scorePercentage}%; background-color: #00F2FE; height: 4px; border-radius: 4px;"></td>
+                                                <td style="width: ${100 - scorePercentage}%; height: 4px;"></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Bold Activity Header -->
+                        <h3 style="margin: 0 0 16px 0; color: #FFFFFF; font-size: 18px; line-height: 1.35; font-weight: 700; font-family: 'Space Grotesk', -apple-system, sans-serif; letter-spacing: -0.2px;">
                             ${index + 1}. ${title}
                         </h3>
-                        <ul style="margin: 0; padding-left: 20px; color: #CBD5E1; font-size: 14px; line-height: 1.6;">
-                            ${takeaways.map(t => `<li style="margin-bottom: 6px;">${t}</li>`).join('')}
-                        </ul>
+
+                        <!-- Actionable Takeaway Bullet Grid -->
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                            ${takeaways.map((t, i) => renderBullet(t, i)).join('')}
+                        </table>
                     </td>
                 </tr>
             </table>
@@ -52,12 +96,14 @@ export function renderMasterNewsletterHTML(data = {}) {
 
     const sponsorBlock = `
         <!-- SPONSOR_AD_SLOT -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0; background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%); border: 1px solid #6366F1; border-radius: 10px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0; background-color: #1E293B; border: 1px solid #F5A623; border-radius: 12px; overflow: hidden;">
             <tr>
                 <td style="padding: 24px; text-align: center;">
-                    <span style="font-size: 11px; color: #818CF8; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;">⚡ PARTNER SPONSORSHIP</span>
-                    <h4 style="margin: 8px 0 6px 0; color: #FFFFFF; font-size: 16px;">${sponsorCopy}</h4>
-                    <a href="https://partnerstack.com/?utm_source=futrdesk&utm_medium=newsletter" style="display: inline-block; margin-top: 10px; padding: 10px 20px; background-color: #6366F1; color: #FFFFFF; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 6px;">Explore Enterprise Partner Engine &rarr;</a>
+                    <div style="display: inline-block; padding: 4px 14px; background-color: rgba(245, 166, 35, 0.15); border: 1px solid rgba(245, 166, 35, 0.4); border-radius: 20px; margin-bottom: 10px;">
+                        <span style="font-size: 10px; color: #F5A623; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 1.5px;">⚡ ENTERPRISE SPONSORSHIP</span>
+                    </div>
+                    <h4 style="margin: 6px 0 10px 0; color: #FFFFFF; font-size: 16px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1.4;">${sponsorCopy}</h4>
+                    <a href="https://partnerstack.com/?utm_source=futrdesk&utm_medium=newsletter" style="display: inline-block; margin-top: 10px; padding: 12px 24px; background-color: #F5A623; color: #090D16; font-size: 13px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; text-decoration: none; border-radius: 8px;">Explore Partner Engine &rarr;</a>
                 </td>
             </tr>
         </table>
@@ -81,63 +127,66 @@ export function renderMasterNewsletterHTML(data = {}) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${subject}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+    </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #090D16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; background-color: #090D16; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #090D16; padding: 40px 10px;">
         <tr>
             <td align="center">
-                <!-- Main Container -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #0F172A; border-radius: 12px; border: 1px solid #1E293B; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <!-- Mobile Dashboard Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #090D16; border-radius: 16px; border: 1px solid #1E293B; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
                     
-                    <!-- Header Bar -->
+                    <!-- Dashboard Header Bar -->
                     <tr>
-                        <td style="padding: 32px 32px 24px 32px; background-color: #0B132B; border-bottom: 1px solid #1E293B; text-align: left;">
+                        <td style="padding: 32px 32px 24px 32px; background-color: #0F172A; border-bottom: 1px solid #1E293B; text-align: left;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td>
-                                        <span style="font-family: Arial, sans-serif; font-size: 24px; font-weight: 800; color: #F5A623; letter-spacing: 2px; text-transform: uppercase;">FUTRDESK OS</span>
-                                        <span style="font-size: 14px; color: #64748B; margin-left: 8px;">| SUNDAY BREW</span>
+                                        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 800; color: #F5A623; letter-spacing: 2px; text-transform: uppercase;">FUTRDESK OS</span>
+                                        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: #64748B; margin-left: 8px;">| SUNDAY BREW</span>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style="padding-top: 6px;">
-                                        <span style="font-size: 13px; color: #94A3B8; font-weight: 500;">Executive Intelligence & Macro Signal Synthesis</span>
+                                        <span style="font-size: 13px; color: #94A3B8; font-weight: 500;">Executive Dashboard & Macro Signal Synthesis</span>
                                     </td>
                                 </tr>
                             </table>
                         </td>
                     </tr>
 
-                    <!-- Macro Intro Section -->
+                    <!-- Macro Executive Intro -->
                     <tr>
-                        <td style="padding: 28px 32px; border-bottom: 1px solid #1E293B;">
-                            <h2 style="margin: 0 0 10px 0; color: #FFFFFF; font-size: 20px; font-weight: 700; line-height: 1.3;">
+                        <td style="padding: 28px 32px; background-color: #0F172A; border-bottom: 1px solid #1E293B;">
+                            <h2 style="margin: 0 0 10px 0; color: #FFFFFF; font-size: 20px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1.35;">
                                 ${subject}
                             </h2>
-                            <p style="margin: 0; color: #94A3B8; font-size: 15px; line-height: 1.6;">
+                            <p style="margin: 0; color: #CBD5E1; font-size: 15px; line-height: 1.6;">
                                 ${intro}
                             </p>
                         </td>
                     </tr>
 
-                    <!-- Top Signals Body -->
+                    <!-- Dashboard Activity Cards List -->
                     <tr>
-                        <td style="padding: 28px 32px;">
-                            <div style="margin-bottom: 20px; font-size: 12px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 1px;">
-                                📊 TOP WEEKLY B2B SIGNALS
+                        <td style="padding: 28px 32px; background-color: #090D16;">
+                            <div style="margin-bottom: 20px; font-size: 11px; font-weight: 800; color: #64748B; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 1.5px;">
+                                📊 RECENTLY COMPLETED SIGNALS
                             </div>
                             ${signalsHTML}
                         </td>
                     </tr>
 
-                    <!-- Footer Section -->
+                    <!-- Dashboard Footer -->
                     <tr>
-                        <td style="padding: 24px 32px; background-color: #070C18; border-top: 1px solid #1E293B; text-align: center;">
+                        <td style="padding: 24px 32px; background-color: #0F172A; border-top: 1px solid #1E293B; text-align: center;">
                             <p style="margin: 0 0 10px 0; color: #64748B; font-size: 12px; line-height: 1.5;">
-                                You are receiving this Executive Briefing as a subscriber of <strong>Future Desk OS Intelligence</strong>.
+                                You are receiving this Executive Briefing as a subscriber of <strong style="color: #CBD5E1;">Future Desk OS Intelligence</strong>.
                             </p>
                             <p style="margin: 0; font-size: 12px;">
-                                <a href="https://futrdesk.com/privacy" style="color: #F5A623; text-decoration: none; margin-right: 12px;">Privacy Policy</a>
+                                <a href="https://futrdesk.com/privacy" style="color: #F5A623; text-decoration: none; margin-right: 12px; font-weight: 600;">Privacy Policy</a>
                                 <a href="{{ UnsubscribeURL }}" style="color: #64748B; text-decoration: underline;">Unsubscribe</a>
                             </p>
                         </td>
