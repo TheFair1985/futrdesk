@@ -1,0 +1,32 @@
+name: Futrdesk Sunday Morning Brew Newsletter Automation
+
+on:
+  schedule:
+    # Runs every Sunday at 14:00 UTC (09:00 AM EST)
+    - cron: '0 14 * * 0'
+  workflow_dispatch:
+
+jobs:
+  compile_and_send_newsletter:
+    name: Compile & Send Sunday Brew
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: npm ci || npm install
+
+      - name: Execute Sunday Brew Aggregator & Plunk Dispatch
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          PLUNK_SECRET_API_KEY: ${{ secrets.PLUNK_SECRET_API_KEY }}
+          PLUNK_TEST_EMAIL: ${{ secrets.PLUNK_TEST_EMAIL }}
+        run: node 07_Published/distributors/sunday_brew_aggregator.mjs

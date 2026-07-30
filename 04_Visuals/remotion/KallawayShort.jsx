@@ -1,7 +1,8 @@
 import React from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { SponsorLayer } from './SponsorLayer.jsx';
 
-export const KallawayShort = ({ scenes = [], accentColor = '#F5A623', title = 'Future Desk OS' }) => {
+export const KallawayShort = ({ scenes = [], accentColor = '#F5A623', title = 'Future Desk OS', sponsorName = 'PartnerStack' }) => {
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
 
@@ -119,6 +120,9 @@ export const KallawayShort = ({ scenes = [], accentColor = '#F5A623', title = 'F
                 <span style={{ fontSize: 20, color: '#718096' }}>⚡ {scene.sound_trigger || 'SFX_WHOOSH'}</span>
                 <span className="bebas-caption" style={{ fontSize: 28, color: accentColor }}>{scene.timing || '00:00'}</span>
             </div>
+
+            {/* Dynamic Kinetic Sponsor Overlay Layer */}
+            <SponsorLayer sponsorName={sponsorName} accentColor={accentColor} />
         </div>
     );
 };

@@ -240,6 +240,39 @@ async function generateMetadataMatrix(leadingQuestion, topSignal) {
     return callGroq(prompt, fallback);
 }
 
+/**
+ * Detects common B2B tool mentions and appends UTM-tagged affiliate URLs.
+ * @param {string} text - Input text string
+ * @returns {string} Text with appended affiliate links
+ */
+export function injectAffiliateLinks(text = '') {
+    if (!text || typeof text !== 'string') return text;
+
+    const affiliateMap = [
+        { regex: /\bNotion\b/gi, name: 'Notion', url: 'https://notion.so/?utm_source=futrdesk&utm_medium=content&utm_campaign=b2b_briefing' },
+        { regex: /\bVercel\b/gi, name: 'Vercel', url: 'https://vercel.com/?utm_source=futrdesk&utm_medium=content&utm_campaign=b2b_briefing' },
+        { regex: /\bGroq\b/gi, name: 'Groq', url: 'https://groq.com/?utm_source=futrdesk&utm_medium=content&utm_campaign=b2b_briefing' },
+        { regex: /\bSupabase\b/gi, name: 'Supabase', url: 'https://supabase.com/?utm_source=futrdesk&utm_medium=content&utm_campaign=b2b_briefing' },
+        { regex: /\bLemon Squeezy\b/gi, name: 'Lemon Squeezy', url: 'https://futrdesk.lemonsqueezy.com/?utm_source=futrdesk&utm_medium=content' },
+        { regex: /\bPartnerStack\b/gi, name: 'PartnerStack', url: 'https://partnerstack.com/?utm_source=futrdesk&utm_medium=content' }
+    ];
+
+    let modifiedText = text;
+    const detectedLinks = [];
+
+    for (const item of affiliateMap) {
+        if (item.regex.test(text) && !text.includes(item.url)) {
+            detectedLinks.push(`🔗 ${item.name}: ${item.url}`);
+        }
+    }
+
+    if (detectedLinks.length > 0) {
+        modifiedText = `${modifiedText.trim()}\n\n---\nExecutive Toolkit:\n${detectedLinks.join('\n')}`;
+    }
+
+    return modifiedText;
+}
+
 // --- MAIN FUNCTION ---
 async function main() {
     await ensureFileSystem();
@@ -276,6 +309,17 @@ async function main() {
     console.log('Generating Multi-Platform Metadata Matrix with Groq...');
     distributionPackage.metadataMatrix = await generateMetadataMatrix(leadingQuestion, topSignal);
     totalLlmCost += NET_COST_PER_LLM_CALL;
+
+    // Apply UTM Affiliate Injection to YouTube Shorts, TikTok, and X Thread (LinkedIn remains untouched)
+    if (distributionPackage.metadataMatrix.yt_shorts_meta) {
+        distributionPackage.metadataMatrix.yt_shorts_meta.description = injectAffiliateLinks(distributionPackage.metadataMatrix.yt_shorts_meta.description);
+    }
+    if (distributionPackage.metadataMatrix.tiktok_meta) {
+        distributionPackage.metadataMatrix.tiktok_meta.description = injectAffiliateLinks(distributionPackage.metadataMatrix.tiktok_meta.description);
+    }
+    if (distributionPackage.metadataMatrix.x_thread_tweet_2) {
+        distributionPackage.metadataMatrix.x_thread_tweet_2 = injectAffiliateLinks(distributionPackage.metadataMatrix.x_thread_tweet_2);
+    }
 
     // Backwards compatibility mappings for existing downstream components
     distributionPackage.videoMetadata = {
