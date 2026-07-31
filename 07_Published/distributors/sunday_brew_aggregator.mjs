@@ -362,7 +362,7 @@ export async function synthesizeSundayBrewHTML(topSignals) {
 export async function generateAndSendSundayBrew() {
     console.log('☕ [Sunday Brew Aggregator] Starting Sunday Morning Brew Execution...');
 
-    const plunkKey = process.env.PLUNK_SECRET_API_KEY?.trim();
+    const plunkKey = process.env.PLUNK_SECRET_API_KEY?.replace(/['"]/g, '').trim();
     if (!plunkKey) {
         throw new Error('❌ [Sunday Brew Critical Error] PLUNK_SECRET_API_KEY environment variable is missing.');
     }

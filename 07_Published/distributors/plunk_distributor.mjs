@@ -8,7 +8,7 @@ const DEFAULT_NEWSLETTER_PATH = './09_Newsletter/newsletter_preview.html';
  * @returns {Promise<Object>} Plunk API dispatch result
  */
 export async function sendPlunkNewsletter(contentPackage = {}) {
-    const apiKey = (process.env.PLUNK_SECRET_API_KEY || process.env.PLUNK_API_KEY)?.trim();
+    const apiKey = (process.env.PLUNK_SECRET_API_KEY || process.env.PLUNK_API_KEY)?.replace(/['"]/g, '').trim();
 
     if (!apiKey) {
         console.warn('⚠️ [Plunk Distributor] PLUNK_SECRET_API_KEY is missing. Skipping live newsletter dispatch.');
