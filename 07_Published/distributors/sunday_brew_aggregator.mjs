@@ -12,7 +12,7 @@ const SCORED_SIGNALS_PATH = './02_Signals/scored_signals.json';
 const RAW_SIGNALS_PATH = './02_Signals/raw_signals.json';
 const PREVIEW_HTML_PATH = './07_Published/previews/sunday_brew_preview.html';
 const MASTER_TEMPLATE_PATH = './07_Published/previews/master_template.html';
-const PLUNK_API_URL = 'https://api.useplunk.com/v1/send';
+const PLUNK_API_URL = 'https://next-api.useplunk.com/v1/send';
 
 /**
  * Compiles structured newsletter JSON payload into an email-safe, table-based Master HTML Template
@@ -403,6 +403,7 @@ export async function generateAndSendSundayBrew() {
                 },
                 body: JSON.stringify({
                     to: recipientEmail,
+                    from: process.env.PLUNK_SENDER_EMAIL?.replace(/['"]/g, '').trim() || 'newsletter@futrdesk.com',
                     subject: structuredData.subject,
                     body: compiledHTML
                 }),

@@ -37,16 +37,17 @@ export async function sendPlunkNewsletter(contentPackage = {}) {
                     'Future Desk OS — Autonomous Executive Briefing';
 
     try {
-        console.log('📧 [Plunk Distributor] Dispatching newsletter via Plunk REST API (https://api.useplunk.com/v1/send)...');
+        console.log('📧 [Plunk Distributor] Dispatching newsletter via Plunk REST API (https://next-api.useplunk.com/v1/send)...');
         console.log("[Plunk Distributor] Plunk Key Prefix:", apiKey.substring(0, 3));
-        const response = await fetch('https://api.useplunk.com/v1/send', {
+        const response = await fetch('https://next-api.useplunk.com/v1/send', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                to: process.env.PLUNK_RECIPIENT_OR_LIST?.trim() || 'subscribers@futrdesk.com',
+                to: process.env.PLUNK_RECIPIENT_OR_LIST?.replace(/['"]/g, '').trim() || 'subscribers@futrdesk.com',
+                from: process.env.PLUNK_SENDER_EMAIL?.replace(/['"]/g, '').trim() || 'newsletter@futrdesk.com',
                 subject: subject,
                 body: htmlContent,
                 name: 'Future Desk OS Briefing'
