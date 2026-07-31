@@ -1,19 +1,20 @@
-# Future Desk OS: Master Architecture & Strategy
+# Future Desk: Master Architecture & Strategy
 
 ## 1. Core Identity & Directives
-*   **The Law:** We are Future Desk OS. We utilize the mechanics of successful creators (psychology, retention hooks, storytelling), but we never explicitly mention them. We are a unique, standalone brand.
+*   **The Law:** We are Future Desk. We do not mimic or reference other creators, brands, or competitors. We are our own unique, standalone B2B media authority. Our visual style, tone, and pacing are hyper-realistic and entirely proprietary. 
+*   **No AI Tells:** All text, audio, and video must feel 100% human, authoritative, and organic. Robotic phrasing or uncanny valley visuals are strictly forbidden.
 *   **Target Audience:** North American B2B Market (US & Canada). Executive Leaders, CEOs, COOs, CFOs.
 *   **Target Platforms:** 
-    *   *Video:* YouTube Shorts, IG Reels, TikTok (Strictly vertical, max 58 seconds).
+    *   *Video:* YouTube (Shorts & Longform), IG Reels, TikTok (Strictly native aspect ratios, Shorts/Reels max 58 seconds).
     *   *Text:* X (Threads), LinkedIn (Executive Briefings), Newsletter (Sunday Brew).
 
-## 2. The Custom "OpusClip" Engine & Asset Library
-We are building a zero-budget, highly automated video production pipeline bypassing expensive public software.
-*   **Core Tech Stack:** Node.js, FFmpeg (for rendering and filtering), Whisper API (for dynamic timestamps), RunPod Serverless (for heavy GPU AI tasks like Avatar Lip-Sync).
-*   **The Future Desk Asset Library (Our Canva/CapCut):**
+## 2. The Proprietary Video Engine & Asset Library
+We are building a zero-budget, highly automated video production pipeline using React-based programmatic rendering to achieve pixel-perfect, broadcast-quality animations without legacy software constraints.
+*   **Core Tech Stack:** Node.js, **Remotion** (for 60fps programmatic video rendering, layered audio, and complex dynamic animations), Whisper API (for sub-second timestamps), RunPod Serverless (for hyper-realistic Avatar Lip-Sync).
+*   **The Future Desk Asset Library:**
     *   We will establish a structured cloud storage repository (`/08_Media/assets/effects`, `/08_Media/assets/sounds`, `/08_Media/assets/overlays`).
-    *   Every custom transition, sound design layer, and visual hook we generate will be saved as a reusable component.
-    *   *Evolution:* The system will track which effects (e.g., a specific zoom-in hook) yield the highest retention and automatically prioritize those assets in future renders.
+    *   Every custom transition, layered sound effect (SFX, Foley, Room Tone), and visual hook we generate will be saved as a reusable component.
+    *   *Evolution:* The system tracks which visual hooks and soundscapes yield the highest retention and automatically prioritizes those assets in future renders.
 
 ## 3. Intelligent Analytics & The Feedback Loop
 The system must be a self-healing, self-improving entity with minimal Human-in-the-Loop (HITL).
