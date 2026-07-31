@@ -1,5 +1,4 @@
-import { promises as fs } from 'fs';
-import { existsSync } from 'fs';
+import fs, { existsSync } from 'fs';
 import { dirname } from 'path';
 
 // Safely load environment variables
@@ -12,11 +11,13 @@ try {
 const SCORED_SIGNALS_PATH = './02_Signals/scored_signals.json';
 const RAW_SIGNALS_PATH = './02_Signals/raw_signals.json';
 const PREVIEW_HTML_PATH = './07_Published/previews/sunday_brew_preview.html';
+const MASTER_TEMPLATE_PATH = './07_Published/previews/master_template.html';
 const PLUNK_API_URL = 'https://api.useplunk.com/v1/send';
 
 /**
  * Compiles structured newsletter JSON payload into an email-safe, table-based Master HTML Template
  * matching the Mobile App Dashboard UI aesthetic (Obsidian/Charcoal Dark Mode).
+ * Reads master_template.html via fs.readFileSync and replaces placeholder tags with Groq JSON data.
  * @param {Object} data - Structured newsletter content from Groq AI
  * @returns {string} Fully compiled HTML document string
  */
@@ -121,12 +122,22 @@ export function renderMasterNewsletterHTML(data = {}) {
         signalsHTML += sponsorBlock;
     }
 
-    return `<!DOCTYPE html>
+    // Read external template via fs.readFileSync
+    let templateRaw = '';
+    if (existsSync(MASTER_TEMPLATE_PATH)) {
+        templateRaw = fs.readFileSync(MASTER_TEMPLATE_PATH, 'utf-8');
+    }
+
+    // Clean html template content checking for non-comment content
+    const templateContentWithoutComments = templateRaw.replace(/<!--[\s\S]*?-->/g, '').trim();
+
+    // Fall back to default dashboard template if master_template.html is empty or only contains comments
+    let template = templateContentWithoutComments.length > 0 ? templateRaw : `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${subject}</title>
+    <title>{{SUBJECT}}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
     </style>
@@ -161,10 +172,10 @@ export function renderMasterNewsletterHTML(data = {}) {
                     <tr>
                         <td style="padding: 28px 32px; background-color: #0F172A; border-bottom: 1px solid #1E293B;">
                             <h2 style="margin: 0 0 10px 0; color: #FFFFFF; font-size: 20px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; line-height: 1.35;">
-                                ${subject}
+                                {{SUBJECT}}
                             </h2>
                             <p style="margin: 0; color: #CBD5E1; font-size: 15px; line-height: 1.6;">
-                                ${intro}
+                                {{INTRO}}
                             </p>
                         </td>
                     </tr>
@@ -175,7 +186,7 @@ export function renderMasterNewsletterHTML(data = {}) {
                             <div style="margin-bottom: 20px; font-size: 11px; font-weight: 800; color: #64748B; font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 1.5px;">
                                 📊 RECENTLY COMPLETED SIGNALS
                             </div>
-                            ${signalsHTML}
+                            {{SIGNALS_HTML}}
                         </td>
                     </tr>
 
@@ -197,6 +208,32 @@ export function renderMasterNewsletterHTML(data = {}) {
     </table>
 </body>
 </html>`;
+
+    // Perform tag replacements for global newsletter fields
+    let compiled = template;
+    compiled = compiled.replaceAll('{{SUBJECT}}', subject);
+    compiled = compiled.replaceAll('{{INTRO}}', intro);
+    compiled = compiled.replaceAll('{{EXECUTIVE_INTRO}}', intro);
+    compiled = compiled.replaceAll('{{SPONSOR_COPY}}', sponsorCopy);
+    compiled = compiled.replaceAll('{{SPONSOR_AD_SLOT}}', sponsorBlock);
+    compiled = compiled.replaceAll('{{SIGNALS_HTML}}', signalsHTML);
+    compiled = compiled.replaceAll('{{SIGNALS_LIST}}', signalsHTML);
+
+    // Replace signal-specific tags
+    signals.forEach((sig, index) => {
+        const i = index + 1;
+        const title = sig.title || sig.headline || `Signal #${i}`;
+        const pillar = sig.causal_pillar || sig.pillar || "Strategic Insight";
+        const score = Math.min(30, Math.max(1, sig.total_editorial_score || sig.score || 25));
+        const takeaways = Array.isArray(sig.takeaways) ? sig.takeaways.join('\n') : (sig.takeaway || "");
+
+        compiled = compiled.replaceAll(`{{SIGNAL_${i}_TITLE}}`, title);
+        compiled = compiled.replaceAll(`{{SIGNAL_${i}_PILLAR}}`, pillar);
+        compiled = compiled.replaceAll(`{{SIGNAL_${i}_SCORE}}`, String(score));
+        compiled = compiled.replaceAll(`{{SIGNAL_${i}_TAKEAWAYS}}`, takeaways);
+    });
+
+    return compiled;
 }
 
 /**
@@ -218,7 +255,7 @@ export async function getTopWeeklySignals() {
         ];
     }
 
-    const rawData = await fs.readFile(signalsPath, 'utf-8');
+    const rawData = await fs.promises.readFile(signalsPath, 'utf-8');
     const signals = JSON.parse(rawData);
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -338,8 +375,8 @@ export async function generateAndSendSundayBrew() {
 
     // Save compiled Master HTML to 07_Published/previews/sunday_brew_preview.html for local browser inspection
     try {
-        await fs.mkdir(dirname(PREVIEW_HTML_PATH), { recursive: true });
-        await fs.writeFile(PREVIEW_HTML_PATH, compiledHTML);
+        await fs.promises.mkdir(dirname(PREVIEW_HTML_PATH), { recursive: true });
+        await fs.promises.writeFile(PREVIEW_HTML_PATH, compiledHTML);
         console.log(`✅ [Sunday Brew] Master HTML preview generated and saved to ${PREVIEW_HTML_PATH}`);
     } catch (err) {
         console.error(`⚠️ [Sunday Brew] Error writing HTML preview file: ${err.message}`);
@@ -357,6 +394,7 @@ export async function generateAndSendSundayBrew() {
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
 
         try {
+            console.log("[Sunday Brew] Plunk Key Prefix:", plunkKey.substring(0, 3));
             const response = await fetch(PLUNK_API_URL, {
                 method: 'POST',
                 headers: {

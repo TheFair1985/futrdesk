@@ -7,7 +7,7 @@
     "causal_pillar": "Decision_Systems",
     "total_editorial_score": 24,
     "source_url": "https://futrdesk.com/signals/mock-e2e-001",
-    "timestamp_ingested": "2026-07-30T11:13:34.083Z"
+    "timestamp_ingested": "2026-07-31T08:17:44.377Z"
   },
   "metadataMatrix": {
     "linkedin_post": "🚀 Executive Briefing: Decision Systems Shift\n\nSignal: \"Autonomous AI Decision Workflows Outperform Bespoke LLM Infrastructure\"\n\nKey Takeaways:\n• 1. Custom LLM maintenance CapEx degrades operating margins rapidly.\n• 2. Model-agnostic dynamic routing defended Q3 EBITDA across enterprise benchmarks.\n• 3. CFOs are prioritizing workflow orchestration over raw compute ownership.\n\nHow is your executive board auditing model deprecation costs this quarter?",
@@ -54,10 +54,10 @@
     ]
   },
   "metadata": {
-    "generationTimestamp": "2026-07-30T11:13:34.090Z",
+    "generationTimestamp": "2026-07-31T08:17:44.384Z",
     "netProcessingCostEur": 0,
     "testMode": true,
     "aiEngine": "Mock Engine (E2E Bypass)"
   },
-  "video_download_url": "https://fkkawqkxzrlzbgbohptu.supabase.co/storage/v1/object/public/futrdesk_assets/youtube_short_preview_1785410014113.mp4"
+  "video_download_url": "https://fkkawqkxzrlzbgbohptu.supabase.co/storage/v1/object/public/futrdesk_assets/youtube_short_preview_1785485864410.mp4"
 }

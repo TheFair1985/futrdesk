@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import { markSignalAsPublished } from '../../02_Signals/notion_updater.mjs';
 
 const DISTRIBUTION_PACKAGE_PATH = './07_Published/EP06_Distribution_Package.json';
 
@@ -44,8 +45,9 @@ export function sanitizeMetadataPayload(pkg) {
 /**
  * Reads EP06_Distribution_Package.json, applies strict sanitization, and posts payload to N8N_WEBHOOK_URL.
  * Includes a 3-attempt exponential backoff retry mechanism and a 10-second fetch timeout via AbortController.
+ * Autonomously updates Notion database page status to "Published" once payload delivery completes.
  */
-export async function dispatchToN8N() {
+export async function dispatchToN8N(overridePageId = null) {
     console.log('🌐 [N8N Dispatcher] Preparing metadata matrix payload for n8n dispatch...');
 
     const webhookUrl = process.env.N8N_WEBHOOK_URL?.trim();
@@ -91,7 +93,28 @@ export async function dispatchToN8N() {
             }
 
             console.log(`✅ [N8N Dispatcher] Payload successfully dispatched to n8n webhook on attempt ${attempt}! Status: ${response.status}`);
-            return { success: true, status: response.status, attempt };
+
+            // Autonomous Feedback Loop: Close data loop by updating Notion status to "Published"
+            const pageId = overridePageId ||
+                           parsedPackage.notionPageId ||
+                           parsedPackage.pageId ||
+                           parsedPackage.notion_page_id ||
+                           parsedPackage.topSignal?.notionPageId ||
+                           parsedPackage.topSignal?.id ||
+                           parsedPackage.metadata?.notionPageId;
+
+            if (pageId) {
+                console.log(`🔄 [N8N Dispatcher] Triggering Notion feedback loop for pageId: ${pageId}...`);
+                try {
+                    await markSignalAsPublished(pageId);
+                } catch (notionErr) {
+                    console.warn(`⚠️ [N8N Dispatcher] Notion feedback update failed: ${notionErr.message}`);
+                }
+            } else {
+                console.warn('⚠️ [N8N Dispatcher Warning] No Notion pageId detected in payload. Feedback loop skipped.');
+            }
+
+            return { success: true, status: response.status, attempt, pageId };
         } catch (err) {
             clearTimeout(timeoutId);
             const isAbort = err.name === 'AbortError';
@@ -110,3 +133,4 @@ export async function dispatchToN8N() {
 
     throw new Error(`❌ [N8N Dispatcher Error] All ${maxAttempts} attempts to dispatch to n8n failed. Last error: ${lastError.message}`);
 }
+

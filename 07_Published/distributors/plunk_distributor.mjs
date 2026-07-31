@@ -38,6 +38,7 @@ export async function sendPlunkNewsletter(contentPackage = {}) {
 
     try {
         console.log('📧 [Plunk Distributor] Dispatching newsletter via Plunk REST API (https://api.useplunk.com/v1/send)...');
+        console.log("[Plunk Distributor] Plunk Key Prefix:", apiKey.substring(0, 3));
         const response = await fetch('https://api.useplunk.com/v1/send', {
             method: 'POST',
             headers: {
