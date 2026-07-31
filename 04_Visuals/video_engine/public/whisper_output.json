@@ -1,0 +1,97 @@
+{
+  "task": "transcribe",
+  "language": "German",
+  "duration": 5.828312576,
+  "text": " Future Desk OS ist der ultimate Machine, wird die Code Makro Signals before the hit the market.",
+  "words": [
+    {
+      "word": "Future",
+      "start": 0.02,
+      "end": 0.52
+    },
+    {
+      "word": "Desk",
+      "start": 0.52,
+      "end": 0.92
+    },
+    {
+      "word": "OS",
+      "start": 0.92,
+      "end": 1.22
+    },
+    {
+      "word": "ist",
+      "start": 1.22,
+      "end": 1.58
+    },
+    {
+      "word": "der",
+      "start": 1.58,
+      "end": 1.68
+    },
+    {
+      "word": "ultimate",
+      "start": 1.68,
+      "end": 2.04
+    },
+    {
+      "word": "Machine,",
+      "start": 2.04,
+      "end": 2.9
+    },
+    {
+      "word": "wird",
+      "start": 2.9,
+      "end": 3.02
+    },
+    {
+      "word": "die",
+      "start": 3.02,
+      "end": 3.2
+    },
+    {
+      "word": "Code",
+      "start": 3.2,
+      "end": 3.42
+    },
+    {
+      "word": "Makro",
+      "start": 3.42,
+      "end": 3.8
+    },
+    {
+      "word": "Signals",
+      "start": 3.8,
+      "end": 4.34
+    },
+    {
+      "word": "before",
+      "start": 4.34,
+      "end": 4.78
+    },
+    {
+      "word": "the",
+      "start": 4.78,
+      "end": 4.96
+    },
+    {
+      "word": "hit",
+      "start": 4.96,
+      "end": 5.18
+    },
+    {
+      "word": "the",
+      "start": 5.18,
+      "end": 5.26
+    },
+    {
+      "word": "market.",
+      "start": 5.26,
+      "end": 6.04
+    }
+  ],
+  "segments": null,
+  "x_groq": {
+    "id": "req_01kyvxzht9eyn8rh6x52m4v3cr"
+  }
+}
