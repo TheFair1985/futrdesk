@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-07-31T09:07:30.845Z",
+  "generatedAt": "2026-07-31T09:22:10.119Z",
   "totalSignals": 4,
-  "registryCount": 0,
+  "registryCount": 2,
   "timeline": [
     {
       "signalId": "328e8043-9938-418f-a2b2-59d6152190b2",
       "headline": "Fitch warns AI market correction emerging as major global credit risk",
       "causalPillar": "Decision_Systems",
-      "videoSnippetId": "fallback_abstract_01",
+      "videoSnippetId": "pexels_vid_5028622",
       "audioSnippetId": "fallback_audio_01",
       "matchedKeywords": [
         "decision_systems",
@@ -21,7 +21,7 @@
       "signalId": "210800cf-08d2-40a5-8f28-db50c0b04c54",
       "headline": "Amazon winds down most flagship AI models in strategy overhaul, Business Insider reports",
       "causalPillar": "Decision_Systems",
-      "videoSnippetId": "fallback_abstract_01",
+      "videoSnippetId": "pexels_vid_5028622",
       "audioSnippetId": "fallback_audio_01",
       "matchedKeywords": [
         "decision_systems",
@@ -35,7 +35,7 @@
       "signalId": "34e0ff82-f206-45f6-9cdd-de21c7f788f4",
       "headline": "Brookfield sees 6.5 GW of AI data-centre capacity coming online in India",
       "causalPillar": "Intelligence",
-      "videoSnippetId": "fallback_abstract_01",
+      "videoSnippetId": "pexels_vid_7140928",
       "audioSnippetId": "fallback_audio_01",
       "matchedKeywords": [
         "intelligence",
@@ -49,7 +49,7 @@
       "signalId": "b0eaf382-d498-40e2-a4e8-ef492d384ed7",
       "headline": "Moodyaposs says aposunprecedentedapos AI spending threatens credit quality of Amazon, Meta, Alphabet and others",
       "causalPillar": "Intelligence",
-      "videoSnippetId": "fallback_abstract_01",
+      "videoSnippetId": "pexels_vid_7140928",
       "audioSnippetId": "fallback_audio_01",
       "matchedKeywords": [
         "intelligence",
