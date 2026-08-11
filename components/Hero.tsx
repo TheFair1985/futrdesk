@@ -114,25 +114,42 @@ export function Hero() {
           {/* WHATSAPP MOCKUP */}
           <motion.div
             id="whatsapp"
-            className="absolute flex flex-col w-[280px] z-10"
+            className="absolute flex flex-col w-[280px] h-[550px] z-10 rounded-[2.5rem] border-[6px] border-gray-900 bg-white overflow-hidden shadow-2xl"
           >
-            {/* Sender bubble */}
-            <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm mb-4 border border-gray-100 relative max-w-[85%] self-start">
-              <p className="text-sm text-gray-800 font-sans">Hier die Materialkosten für den Einsatz heute. Arbeitszeit 4h.</p>
-              <div className="flex items-center justify-end mt-1 gap-1">
-                <span className="text-[10px] text-gray-400">14:22</span>
-              </div>
-            </div>
+            {/* Background Screenshot */}
+            <img 
+              src="/whatsapp-bg.png" 
+              alt="WhatsApp Chat" 
+              className="absolute inset-0 w-full h-full object-cover z-0"
+            />
             
-            {/* Image Bubble */}
-            <div className="bg-[#E7FFDB] p-1.5 rounded-2xl rounded-tr-none shadow-sm border border-green-100 relative self-end w-48">
-              <div className="w-full h-32 bg-gray-200 rounded-xl overflow-hidden relative flex items-center justify-center border border-black/5">
-                <span className="font-mono text-xs text-black/30 transform -rotate-12">Zettel.jpg</span>
+            {/* Chat Content Overlay */}
+            <div className="relative z-10 px-3 pb-[4.5rem] h-full flex flex-col justify-end gap-3">
+              
+              {/* User sends note (Green Bubble) */}
+              <div className="bg-[#dcf8c6] p-1.5 rounded-2xl rounded-tr-none shadow-sm relative self-end w-[85%] border border-[#c1e8a8]">
+                <div className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden relative border border-black/5">
+                  <img src="/note.png" alt="Handwritten Note" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex flex-col mt-1 px-1">
+                  <span className="text-[13px] text-gray-800 leading-snug mb-1">Bitte Rechnung erstellen, danke!</span>
+                  <div className="flex items-center justify-end gap-1">
+                    <span className="text-[10px] text-gray-500">14:23</span>
+                    <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-end mt-1 mr-1 gap-1">
-                <span className="text-[10px] text-gray-500">14:23</span>
-                <CheckCheck className="w-3 h-3 text-[#53bdeb]" />
+
+              {/* Bot answers (White Bubble) */}
+              <div className="bg-white p-2.5 rounded-2xl rounded-tl-none shadow-sm relative self-start max-w-[85%] border border-gray-100">
+                <p className="text-[13px] text-gray-800 font-sans leading-snug">
+                  Wird erledigt! Ich extrahiere die Daten... ⏳
+                </p>
+                <div className="flex items-center justify-end mt-1 gap-1">
+                  <span className="text-[10px] text-gray-400">14:23</span>
+                </div>
               </div>
+              
             </div>
           </motion.div>
 
