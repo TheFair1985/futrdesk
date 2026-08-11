@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { sendWhatsAppText } from '../../../../lib/whatsapp/sendMessage';
 
 // Supabase Admin Client for bypassing RLS during webhook execution
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY!
+const getSupabaseAdmin = () => createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY || ''
 );
 
 /**
@@ -62,6 +62,7 @@ export async function POST(request: Request) {
             
             // C. Database Transaction (Supabase Service Role)
             // Step 3: Query
+            const supabaseAdmin = getSupabaseAdmin();
             const { data: channel, error: searchError } = await supabaseAdmin
               .from('channels')
               .select('id, user_id, connection_status')
