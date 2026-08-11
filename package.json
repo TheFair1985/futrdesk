@@ -1,6 +1,23 @@
 {
+  "name": "futrdesk",
+  "version": "1.0.0",
+  "description": "Futrdesk Zero-UI B2B-Middleware",
+  "main": "index.js",
+  "scripts": {
+    "update-types": "supabase gen types typescript --project-id \"$PROJECT_REF\" --schema public > types/supabase.ts",
+    "build": "next build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "@supabase/supabase-js": "^2.111.0",
-    "edge-tts": "^1.0.1"
+    "@supabase/supabase-js": "^2.112.2",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "dotenv": "^17.4.2",
+    "next": "^16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^7.0.2"
   }
 }

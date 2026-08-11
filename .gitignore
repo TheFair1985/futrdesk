@@ -1,12 +1,20 @@
-# Ignore local environment files
-.env*.local
+# Environment variables
+.env*
+!.env.example
 
-# Ignore node_modules
+# Node modules
 node_modules/
 
-# Ignore system files
-.DS_Store
-.tmp.driveupload/
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Ignore the archive
-/12_Archive/*
+# Temporary/Build files
+.DS_Store
+.tmp.driveupload
+.next/
+out/
+build/
+dist/
+*.log
