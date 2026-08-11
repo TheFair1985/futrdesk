@@ -1,6 +1,9 @@
 import { ArrowRight, Check } from 'lucide-react';
 import { Hero } from '../components/Hero';
 import { Features } from '../components/Features';
+import { DataFlow } from '../components/DataFlow';
+import { Compliance } from '../components/Compliance';
+import { Ecosystem } from '../components/Ecosystem';
 import { Pricing } from '../components/Pricing';
 import { FaqAndCta } from '../components/FaqAndCta';
 
@@ -23,6 +26,15 @@ export default function Home() {
 
       {/* FEATURES SECTION */}
       <Features />
+
+      {/* DATA FLOW (TRACING BEAM) SECTION */}
+      <DataFlow />
+
+      {/* COMPLIANCE (TEXT REVEAL) SECTION */}
+      <Compliance />
+
+      {/* ECOSYSTEM (INFINITE SCROLL) SECTION */}
+      <Ecosystem />
 
       {/* PRICING SECTION */}
       <Pricing />
