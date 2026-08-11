@@ -24,8 +24,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de" className={`${plusJakartaSans.variable} ${spaceMono.variable}`}>
-      <body className="font-sans bg-background text-core antialiased">
-        {children}
+      <body className="font-sans bg-background text-core antialiased relative min-h-screen">
+        {/* Aceternity Dot Grid Background */}
+        <div className="absolute inset-0 z-0 h-full w-full bg-background bg-[radial-gradient(#bfc0c0_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-40 pointer-events-none" />
+        
+        {/* Main Content */}
+        <div className="relative z-10">
+          {children}
+        </div>
       </body>
     </html>
   );

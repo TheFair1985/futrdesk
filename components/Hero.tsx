@@ -2,72 +2,43 @@
 
 import { useEffect, useState } from "react";
 import { motion, useAnimate } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check, CheckCheck, FileCheck } from "lucide-react";
 
 export function Hero() {
   const [scope, animate] = useAnimate();
-  const [typedText, setTypedText] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
     const runSequence = async () => {
       while (isMounted) {
+        if (!isMounted) break;
         // Reset state
-        setTypedText("");
-        if (!isMounted) break;
-        await animate("#paper", { opacity: 1, x: 0, rotate: -2 }, { duration: 0 });
-        await animate("#terminal", { opacity: 0, y: 20 }, { duration: 0 });
-        await animate("#pdf", { opacity: 0, x: 100 }, { duration: 0 });
-        await animate("#scanner", { top: "-10%", opacity: 0 }, { duration: 0 });
+        await animate("#whatsapp", { opacity: 1, y: 0, filter: "blur(0px)" }, { duration: 0 });
+        await animate("#beam", { left: "-10%", opacity: 0 }, { duration: 0 });
+        await animate("#pdf", { opacity: 0, x: 50, filter: "blur(10px)" }, { duration: 0 });
 
-        // State 1: Show Paper
-        await new Promise((r) => setTimeout(r, 800));
+        // State 1: Show WhatsApp
+        await new Promise((r) => setTimeout(r, 1500));
         if (!isMounted) break;
 
-        // Transition: Scanner
-        await animate("#scanner", { opacity: 1 }, { duration: 0.2 });
-        await animate("#scanner", { top: "110%" }, { duration: 1.5, ease: "linear" });
-        await animate("#scanner", { opacity: 0 }, { duration: 0.2 });
+        // Transition: Laser Beam Wipe
+        await animate("#beam", { opacity: 1 }, { duration: 0.1 });
+        await animate("#whatsapp", { opacity: 0, filter: "blur(4px)" }, { duration: 0.8, ease: "easeIn" });
+        await animate("#beam", { left: "110%" }, { duration: 1.2, ease: "easeInOut" });
+        await animate("#beam", { opacity: 0 }, { duration: 0.2 });
 
-        if (!isMounted) break;
-
-        // State 2: Terminal pops up
-        await animate("#terminal", { opacity: 1, y: 0 }, { duration: 0.4, type: "spring" });
-        
-        // Terminal typing effect
-        const text1 = "> extracting net amount: 350.00...";
-        const text2 = "> calculating VAT: 19%...";
-        
-        for (let i = 1; i <= text1.length; i++) {
-          if (!isMounted) break;
-          setTypedText(text1.slice(0, i));
-          await new Promise((r) => setTimeout(r, 20));
-        }
-        
-        await new Promise((r) => setTimeout(r, 300));
-        if (!isMounted) break;
-        
-        for (let i = 1; i <= text2.length; i++) {
-          if (!isMounted) break;
-          setTypedText(text1 + "\n" + text2.slice(0, i));
-          await new Promise((r) => setTimeout(r, 20));
-        }
-
-        await new Promise((r) => setTimeout(r, 800));
         if (!isMounted) break;
 
         // State 3: Output PDF slides in
-        animate("#paper", { opacity: 0, scale: 0.95 }, { duration: 0.4 });
-        animate("#terminal", { opacity: 0, scale: 0.95 }, { duration: 0.4 });
-        await animate("#pdf", { opacity: 1, x: 0 }, { duration: 0.5, type: "spring", bounce: 0.3 });
+        await animate("#pdf", { opacity: 1, x: 0, filter: "blur(0px)" }, { duration: 0.6, type: "spring", bounce: 0.2 });
 
         // Wait to show PDF
-        await new Promise((r) => setTimeout(r, 2500));
+        await new Promise((r) => setTimeout(r, 3000));
         if (!isMounted) break;
 
         // Reset for loop
-        await animate("#pdf", { opacity: 0 }, { duration: 0.3 });
+        await animate("#pdf", { opacity: 0, y: -20 }, { duration: 0.4 });
       }
     };
 
@@ -94,107 +65,146 @@ export function Hero() {
   };
 
   return (
-    <section className="grid grid-cols-1 md:grid-cols-2 border-b border-shading min-h-[600px] bg-background">
+    <section className="relative grid grid-cols-1 md:grid-cols-2 min-h-[700px] bg-transparent overflow-hidden">
+      
+      {/* Background Animated Blob */}
+      <motion.div 
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-action/10 rounded-full blur-[100px] pointer-events-none z-0"
+        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
+
       {/* LEFT COLUMN */}
       <motion.div
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
-        className="p-8 md:p-12 lg:p-20 flex flex-col justify-center border-b md:border-b-0 md:border-r border-shading relative"
+        className="p-8 md:p-12 lg:p-20 flex flex-col justify-center relative z-10"
       >
-        <motion.div variants={staggerItem} className="flex items-center gap-2 border border-shading px-3 py-1.5 bg-white w-fit font-mono text-xs font-bold text-core mb-8">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        <motion.div variants={staggerItem} className="flex items-center gap-2 border border-white/30 px-3 py-1.5 bg-white/40 backdrop-blur-md rounded-full w-fit font-mono text-xs font-bold text-core mb-8 shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
           [ EN 16931 ERFÜLLT ]
         </motion.div>
 
-        <motion.h1 variants={staggerItem} className="text-4xl md:text-5xl lg:text-[4rem] font-bold text-core leading-[1.1] tracking-tighter mb-6 max-w-xl">
+        <motion.h1 variants={staggerItem} className="text-4xl md:text-5xl lg:text-[4rem] font-bold text-core leading-[1.05] tracking-tighter mb-6 max-w-xl">
           E-Rechnungen.<br />
           Automatisiert aus deinen Notizen.
         </motion.h1>
 
-        <motion.div variants={staggerItem} className="mt-8 relative group w-fit cursor-pointer">
-          {/* Hard Brutalist Shadow */}
-          <div className="absolute inset-0 bg-core translate-y-1.5 translate-x-1.5 border border-core" />
-          {/* Button Body */}
-          <div className="relative bg-action text-white font-bold px-8 py-4 border border-core flex items-center justify-center gap-2 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:-translate-x-0.5 active:translate-y-1.5 active:translate-x-1.5">
+        <motion.p variants={staggerItem} className="text-lg text-core/70 mb-10 max-w-lg leading-relaxed">
+          Du reparierst, baust und lieferst. Futrdesk macht den Papierkram. Schick einfach ein Foto deines Schmierzettels per WhatsApp – wir erledigen den Rest.
+        </motion.p>
+
+        <motion.div variants={staggerItem} className="relative group w-fit cursor-pointer">
+          {/* Shiny Edge Button Container */}
+          <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-action via-white to-action opacity-70 group-hover:opacity-100 blur-[2px] transition duration-500 animate-pulse" />
+          <button className="relative bg-[#2d3142] text-white font-sans text-sm font-bold px-8 py-4 rounded-lg flex items-center justify-center gap-3 transition-transform duration-200 group-hover:scale-[1.02]">
             Kostenlos starten
-            <ArrowRight className="w-5 h-5" />
-          </div>
+            <ArrowRight className="w-4 h-4 text-action" />
+          </button>
         </motion.div>
       </motion.div>
 
       {/* RIGHT COLUMN */}
-      <div className="bg-gray-50 flex items-center justify-center p-8 relative overflow-hidden" ref={scope}>
-        <div className="relative w-full max-w-sm h-full flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center p-8 relative z-10" ref={scope}>
+        
+        {/* Glassmorphism Container */}
+        <div className="relative w-full max-w-md h-[450px] bg-white/40 backdrop-blur-xl border border-white/60 rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] flex items-center justify-center overflow-hidden">
           
-          {/* PAPER (Ingest) */}
+          {/* WHATSAPP MOCKUP */}
           <motion.div
-            id="paper"
-            className="absolute w-64 h-80 bg-[#f4f4f4] border border-shading flex flex-col p-6 shadow-sm z-10"
-            style={{ rotate: -2 }}
+            id="whatsapp"
+            className="absolute flex flex-col w-[280px] z-10"
           >
-            <div className="w-full h-full border border-dashed border-shading/50 flex items-center justify-center">
-              <span className="font-mono text-xs text-core/40 transform -rotate-12">
-                Handgeschriebener
-                <br />Zettel
-              </span>
+            {/* Sender bubble */}
+            <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm mb-4 border border-gray-100 relative max-w-[85%] self-start">
+              <p className="text-sm text-gray-800 font-sans">Hier die Materialkosten für den Einsatz heute. Arbeitszeit 4h.</p>
+              <div className="flex items-center justify-end mt-1 gap-1">
+                <span className="text-[10px] text-gray-400">14:22</span>
+              </div>
             </div>
             
-            {/* SCANNER LINE */}
-            <motion.div
-              id="scanner"
-              className="absolute left-0 w-full h-1 bg-action z-20 shadow-[0_0_20px_4px_rgba(239,131,84,0.6)]"
-              style={{ top: "-10%", opacity: 0 }}
-            />
-          </motion.div>
-
-          {/* TERMINAL (Structuring) */}
-          <motion.div
-            id="terminal"
-            className="absolute bottom-12 -left-4 w-72 bg-core text-white font-mono text-xs p-4 border border-shading z-30 shadow-lg whitespace-pre-wrap"
-            style={{ opacity: 0, y: 20 }}
-          >
-            <div className="flex gap-1.5 mb-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+            {/* Image Bubble */}
+            <div className="bg-[#E7FFDB] p-1.5 rounded-2xl rounded-tr-none shadow-sm border border-green-100 relative self-end w-48">
+              <div className="w-full h-32 bg-gray-200 rounded-xl overflow-hidden relative flex items-center justify-center border border-black/5">
+                <span className="font-mono text-xs text-black/30 transform -rotate-12">Zettel.jpg</span>
+              </div>
+              <div className="flex items-center justify-end mt-1 mr-1 gap-1">
+                <span className="text-[10px] text-gray-500">14:23</span>
+                <CheckCheck className="w-3 h-3 text-[#53bdeb]" />
+              </div>
             </div>
-            {typedText}
-            <span className="animate-pulse">_</span>
           </motion.div>
 
-          {/* PDF (Output) */}
+          {/* BEAM / LASER WIPE */}
+          <motion.div
+            id="beam"
+            className="absolute top-0 bottom-0 w-32 bg-gradient-to-r from-transparent via-action to-transparent z-20 mix-blend-overlay blur-md"
+            style={{ left: "-10%", opacity: 0 }}
+          />
+          <motion.div
+            id="beam"
+            className="absolute top-0 bottom-0 w-1 bg-action z-30 shadow-[0_0_20px_5px_rgba(239,131,84,0.8)]"
+            style={{ left: "-10%", opacity: 0 }}
+          />
+
+          {/* PDF MOCKUP */}
           <motion.div
             id="pdf"
-            className="absolute w-72 h-[360px] bg-white border-2 border-core z-40 p-6 flex flex-col shadow-[8px_8px_0_0_#2d3142]"
-            style={{ opacity: 0, x: 100 }}
+            className="absolute w-[300px] h-[380px] bg-white rounded-md shadow-2xl border border-gray-200 p-6 flex flex-col z-10"
+            style={{ opacity: 0, x: 50 }}
           >
-            <div className="border-b-2 border-core pb-4 mb-4 flex justify-between items-start">
+            {/* PDF Header */}
+            <div className="border-b border-gray-200 pb-4 mb-4 flex justify-between items-start">
               <div>
-                <div className="font-bold text-core font-sans text-xl">RECHNUNG</div>
-                <div className="font-mono text-xs text-core mt-1">ZUGFeRD PDF/A-3</div>
+                <div className="font-bold text-core font-sans text-xl tracking-tight">RECHNUNG</div>
+                <div className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">Nr. 2026-084</div>
               </div>
-              <div className="w-8 h-8 bg-action/20 border border-action flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-action rounded-full" />
+              <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center">
+                <div className="w-3 h-3 border-2 border-blue-400 rounded-sm" />
               </div>
             </div>
             
-            <div className="space-y-3 font-mono text-xs text-core mt-4 flex-1">
-              <div className="flex justify-between border-b border-shading/30 pb-1">
-                <span>Netto:</span>
-                <span className="font-bold">350.00 EUR</span>
+            {/* Realistic Table */}
+            <div className="w-full text-left mt-2">
+              <div className="grid grid-cols-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-1 mb-2">
+                <span className="col-span-2">Pos</span>
+                <span className="text-right">Menge</span>
+                <span className="text-right">Preis</span>
               </div>
-              <div className="flex justify-between border-b border-shading/30 pb-1">
-                <span>MwSt (19%):</span>
-                <span>66.50 EUR</span>
+              <div className="grid grid-cols-4 text-xs text-core mb-2">
+                <span className="col-span-2 font-medium">Arbeitszeit</span>
+                <span className="text-right text-gray-500">4 h</span>
+                <span className="text-right font-mono">240.00</span>
               </div>
-              <div className="flex justify-between font-bold text-sm mt-4 pt-2 border-t-2 border-core">
-                <span>Brutto:</span>
-                <span>416.50 EUR</span>
+              <div className="grid grid-cols-4 text-xs text-core mb-4 border-b border-gray-100 pb-3">
+                <span className="col-span-2 font-medium">Material</span>
+                <span className="text-right text-gray-500">1 pa</span>
+                <span className="text-right font-mono">110.00</span>
+              </div>
+              
+              {/* Totals */}
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Netto</span>
+                <span className="font-mono">350.00 €</span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mb-3">
+                <span>MwSt 19%</span>
+                <span className="font-mono">66.50 €</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-core pt-2 border-t-2 border-core">
+                <span>Brutto</span>
+                <span className="font-mono text-action">416.50 €</span>
               </div>
             </div>
+
+            {/* ZUGFeRD Badge */}
+            <div className="mt-auto flex items-center gap-2 border border-green-200 bg-green-50 px-2 py-1 rounded">
+               <FileCheck className="w-3 h-3 text-green-600" />
+               <span className="text-[9px] text-green-700 font-bold uppercase tracking-wider">ZUGFeRD PDF/A-3 Integriert</span>
+            </div>
           </motion.div>
-          
+
         </div>
       </div>
     </section>
