@@ -2,6 +2,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import { Hero } from '../components/Hero';
 import { Features } from '../components/Features';
 import { Pricing } from '../components/Pricing';
+import { FaqAndCta } from '../components/FaqAndCta';
 
 export default function Home() {
   return (
@@ -25,6 +26,9 @@ export default function Home() {
 
       {/* PRICING SECTION */}
       <Pricing />
+
+      {/* FAQ & CTA SECTION */}
+      <FaqAndCta />
     </div>
   );
 }
