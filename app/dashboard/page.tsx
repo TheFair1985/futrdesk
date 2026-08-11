@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, RefreshCcw, HardDrive } from "lucide-react";
+import Link from "next/link";
 
 export default function DashboardPage() {
   return (
@@ -50,10 +51,10 @@ export default function DashboardPage() {
           </div>
           
           <div className="mt-8 pt-6 border-t border-shading/30">
-            <button className="flex items-center gap-2 text-sm font-bold text-core/70 hover:text-action transition-colors">
+            <Link href="/dashboard/channels" className="flex items-center gap-2 text-sm font-bold text-core/70 hover:text-action transition-colors w-fit">
               <RefreshCcw className="w-4 h-4" />
               Kanal wechseln / Neu koppeln
-            </button>
+            </Link>
           </div>
         </div>
 
