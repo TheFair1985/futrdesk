@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendWhatsAppText } from '../../../../lib/whatsapp/sendMessage';
+import { getMediaAndUploadToSupabase } from '../../../../lib/whatsapp/getMedia';
 
 // Supabase Admin Client for bypassing RLS during webhook execution
 const getSupabaseAdmin = () => createClient(
@@ -51,6 +52,8 @@ export async function POST(request: Request) {
         // Step 1: Extrahiere Absender-Nummer (from) und Text (body)
         const from = message.from; // Sender phone number
         const textBody = message.text?.body;
+        const image = message.image;
+        const document = message.document;
 
         if (textBody) {
           // Step 2: Regex Matching für den Magic Code (FUTR-XXXX)
@@ -97,6 +100,50 @@ export async function POST(request: Request) {
               from,
               "✅ Kopplung erfolgreich! Futrdesk ist jetzt mit deinem Account verbunden. Schick mir einfach ein Foto deiner ersten Rechnung oder Quittung, um das System zu testen."
             );
+          }
+        } else if (image || document) {
+          // EPISODE 27: Media Processing
+          const mediaObj = image || document;
+          const mediaId = mediaObj.id;
+          const mimeType = mediaObj.mime_type;
+
+          const supabaseAdmin = getSupabaseAdmin();
+          
+          // Nummern-Zuordnung: Finde User anhand der Absender-Nummer
+          const { data: channel, error: channelErr } = await supabaseAdmin
+            .from('channels')
+            .select('user_id')
+            .eq('phone_number', from)
+            .eq('connection_status', 'active')
+            .single();
+
+          if (channel && channel.user_id) {
+            // Pipeline-Trigger: Media Download & Storage Upload
+            const filePath = await getMediaAndUploadToSupabase(mediaId, mimeType, channel.user_id);
+
+            if (filePath) {
+              // Initialer Datensatz in der invoices-Tabelle
+              const { error: insertError } = await supabaseAdmin.from('invoices').insert({
+                user_id: channel.user_id,
+                vendor_name: 'Wird analysiert...',
+                net_amount: 0,
+                gross_amount: 0,
+                pdf_storage_path: filePath,
+                status: 'processing'
+              });
+
+              if (!insertError) {
+                // Bot-Antwort an User
+                await sendWhatsAppText(
+                  from, 
+                  "Dokument empfangen. Unsere KI analysiert die Daten..."
+                );
+              } else {
+                console.error("Error creating invoice record:", insertError);
+              }
+            }
+          } else {
+            console.log(`No active channel found for phone number: ${from}`);
           }
         }
       }
