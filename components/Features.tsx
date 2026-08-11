@@ -7,23 +7,23 @@ import { MouseEvent } from "react";
 const features = [
   {
     icon: Smartphone,
-    title: "Multi-Channel Ingest",
-    text: "Voller Support für E-Mail, WhatsApp und Telegram. Liefere die Daten über den Kanal, den du gerade zur Hand hast.",
+    title: "EINGANG",
+    text: "Schicke uns ein Bild, eine PDF, oder sonstige Dateien über deinen bevorzugten Kanal.",
   },
   {
     icon: BrainCircuit,
-    title: "Kundengedächtnis",
-    text: "Einmal erfasst, nie wieder getippt. Das System erkennt deine Kunden und vervollständigt Adressdaten künftig vollautomatisch.",
+    title: "VERARBEITUNG",
+    text: "Unsere KI analysiert alles automatisch und generiert eine konforme Rechnung.",
   },
   {
     icon: FileCheck,
-    title: "ZUGFeRD PDF-Design",
-    text: "Jede Rechnung verlässt das System als validierte, saubere PDF/A-3 Datei (Profil EN 16931), bereit für DATEV & Co.",
+    title: "VERSAND",
+    text: "Nach deiner Freigabe geht das fertige PDF direkt an die Zieladresse.",
   },
   {
     icon: Archive,
-    title: "Fail-Safe Archiv",
-    text: "1 GB GoBD-Speicher inklusive. Bei Überschreitung gibt es keine Paywall, sondern einen automatischen ZIP-Export an deine E-Mail.",
+    title: "SICHERHEIT",
+    text: "Entwickelt für Sicherheit. ZUGFeRD-konform (EN 16931) und automatisiertes, revisionssicheres GoBD-Archiv.",
   },
 ];
 

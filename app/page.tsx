@@ -1,6 +1,7 @@
 import { ArrowRight, Check } from 'lucide-react';
 import { Hero } from '../components/Hero';
 import { Features } from '../components/Features';
+import { Pricing } from '../components/Pricing';
 
 export default function Home() {
   return (
@@ -21,6 +22,9 @@ export default function Home() {
 
       {/* FEATURES SECTION */}
       <Features />
+
+      {/* PRICING SECTION */}
+      <Pricing />
     </div>
   );
 }
