@@ -6,18 +6,22 @@ import { Check } from "lucide-react";
 import { MouseEvent } from "react";
 import { cn } from "../lib/utils";
 
+const commonFeatures = [
+  "E-Mail + WhatsApp + Telegram (inkl. Foto-Scanner & interaktivem Korrektur-Flow)",
+  "ZUGFeRD PDF-Design (inklusive aller Pflichtangaben)",
+  "Kundengedächtnis (Das System merkt sich Kunden und Adressen für Autovervollständigung)",
+  "Monatlicher Auto-Export (Standard: ZIP mit PDFs & CSV an Buchhaltung/Steuerberater)",
+  "Fail-Safe bei Limit-Überschreitung oder Accountlöschung (Automatischer Datenexport als ZIP)"
+];
+
 const pricingTiers = [
   {
     name: "STARTER",
     priceMonthly: "19,99",
     priceYearly: "199,99",
-    features: [
-      "25 Rechnungen / Monat",
-      "Multi-Channel (WhatsApp, Telegram, Mail)",
-      "ZUGFeRD PDF",
-      "Kundengedächtnis",
-      "1 GB Archiv (inkl. Auto-ZIP-Export)",
-    ],
+    volume: "25 Rechnungen / Monat",
+    storage: "max. 1 GB Speicher",
+    features: commonFeatures,
     highlight: false,
     buttonText: "Kostenlos starten",
   },
@@ -26,23 +30,19 @@ const pricingTiers = [
     badge: "EMPFEHLUNG",
     priceMonthly: "49,99",
     priceYearly: "499,99",
-    features: [
-      "Alle Starter-Features",
-      "Erweitertes Volumen (für kleine Werkstätten)",
-      "Direkter DATEV-Export",
-    ],
+    volume: "75 Rechnungen / Monat",
+    storage: "max. 3 GB Speicher",
+    features: commonFeatures,
     highlight: true,
     buttonText: "Pro testen",
   },
   {
-    name: "FLOTTE",
+    name: "BUSINESS",
     priceMonthly: "99,99",
     priceYearly: "999,99",
-    features: [
-      "Unlimited Features",
-      "Priorisierter Support",
-      "Multi-User fähig",
-    ],
+    volume: "150 Rechnungen / Monat",
+    storage: "max. 5 GB Speicher",
+    features: commonFeatures,
     highlight: false,
     buttonText: "Flotte anfragen",
   },
@@ -101,6 +101,15 @@ function PricingCard({ tier, isYearly }: { tier: typeof pricingTiers[0], isYearl
           <span className={cn("text-sm ml-2", tier.highlight ? "text-white/60" : "text-core/60")}>
             / {isYearly ? "Jahr" : "Monat"}
           </span>
+        </div>
+
+        <div className="mb-6 pb-6 border-b border-shading/30">
+          <div className="flex items-center gap-2 mb-2">
+            <span className={cn("text-sm font-bold", tier.highlight ? "text-white" : "text-core")}>{tier.volume}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={cn("text-xs", tier.highlight ? "text-white/70" : "text-core/70")}>{tier.storage}</span>
+          </div>
         </div>
 
         <ul className="space-y-4 mb-8 flex-1">
@@ -202,8 +211,8 @@ export function Pricing() {
             Auto-Scale
           </div>
           <p className="font-mono text-sm text-core/80 leading-relaxed">
-            Volumen überschritten? Add-ons skalieren automatisch, ohne harten Lockout: <br className="hidden md:block"/>
-            <span className="font-bold text-core">1-19 Stück für je 1,99 € | 20er Paket für 29,99 € | 50er Paket für 79,99 €.</span>
+            Volumen überschritten? Add-Ons sind variabel wählbar: <br className="hidden md:block"/>
+            <span className="font-bold text-core">1-19 Rechnungen für jeweils 1,99 € | 20 Rechnungen für 29,99 € (statt 39,80 €) | 50 Rechnungen für 79,99 € (statt 99,50 €).</span>
           </p>
         </div>
 
