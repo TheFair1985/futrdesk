@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendWhatsAppText } from '../../../../lib/whatsapp/sendMessage';
 
 // Supabase Admin Client for bypassing RLS during webhook execution
 const supabaseAdmin = createClient(
@@ -90,9 +91,11 @@ export async function POST(request: Request) {
 
             console.log(`Channel coupled successfully for user: ${channel.user_id}`);
 
-            // [TODO: EPISODE 26] 
-            // Hier wird in der nächsten Episode die ausgehende Meta-API 
-            // getriggert, um dem User "Kopplung erfolgreich" zu senden.
+            // [EPISODE 26] Trigger outgoing Meta API message
+            await sendWhatsAppText(
+              from,
+              "✅ Kopplung erfolgreich! Futrdesk ist jetzt mit deinem Account verbunden. Schick mir einfach ein Foto deiner ersten Rechnung oder Quittung, um das System zu testen."
+            );
           }
         }
       }
