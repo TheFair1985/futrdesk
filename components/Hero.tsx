@@ -88,18 +88,19 @@ export function Hero() {
 
         <motion.h1 variants={staggerItem} className="text-4xl md:text-5xl lg:text-[4rem] font-bold text-core leading-[1.05] tracking-tighter mb-6 max-w-xl">
           E-Rechnungen.<br />
-          Automatisiert aus deinen Notizen.
+          Automatisiert.<br />
+          Einfach.
         </motion.h1>
 
         <motion.p variants={staggerItem} className="text-lg text-core/70 mb-10 max-w-lg leading-relaxed">
-          Du reparierst, baust und lieferst. Futrdesk macht den Papierkram. Schick einfach ein Foto deines Schmierzettels per WhatsApp – wir erledigen den Rest.
+          Du reparierst, baust und lieferst. Futrdesk macht den Papierkram. Schick einfach eine WhatsApp, oder Email – wir erledigen den Rest.
         </motion.p>
 
         <motion.div variants={staggerItem} className="relative group w-fit cursor-pointer">
           {/* Shiny Edge Button Container */}
           <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-action via-white to-action opacity-70 group-hover:opacity-100 blur-[2px] transition duration-500 animate-pulse" />
           <button className="relative bg-[#2d3142] text-white font-sans text-sm font-bold px-8 py-4 rounded-lg flex items-center justify-center gap-3 transition-transform duration-200 group-hover:scale-[1.02]">
-            Kostenlos starten
+            Jetzt starten
             <ArrowRight className="w-4 h-4 text-action" />
           </button>
         </motion.div>
@@ -143,7 +144,7 @@ export function Hero() {
               {/* Bot answers (White Bubble) */}
               <div className="bg-white p-2.5 rounded-2xl rounded-tl-none shadow-sm relative self-start max-w-[85%] border border-gray-100">
                 <p className="text-[13px] text-gray-800 font-sans leading-snug">
-                  Wird erledigt! Ich extrahiere die Daten... ⏳
+                  Wird erledigt Boss! Ich extrahiere die Daten... ⏳
                 </p>
                 <div className="flex items-center justify-end mt-1 gap-1">
                   <span className="text-[10px] text-gray-400">14:23</span>

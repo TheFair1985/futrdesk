@@ -1,59 +1,110 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { downloadWhatsAppImage } from '../../../../utils/whatsapp';
-import { processIncomingDocument, executeApproval } from '../../../../services/invoicePipeline';
 
-const supabase = createClient(process.env.SUPABASE_PROJECT_URL!, process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY!);
+// Supabase Admin Client for bypassing RLS during webhook execution
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY!
+);
 
+/**
+ * A. Verifikation (GET Request)
+ * Meta / WhatsApp Cloud API Webhook Verification
+ */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  if (searchParams.get('hub.mode') === 'subscribe' && searchParams.get('hub.verify_token') === process.env.WHATSAPP_VERIFY_TOKEN) {
-    return new NextResponse(searchParams.get('hub.challenge'), { status: 200 });
+  
+  const mode = searchParams.get('hub.mode');
+  const token = searchParams.get('hub.verify_token');
+  const challenge = searchParams.get('hub.challenge');
+
+  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    console.log('WEBHOOK_VERIFIED');
+    return new NextResponse(challenge, { status: 200 });
+  } else {
+    return new NextResponse('Forbidden', { status: 403 });
   }
-  return new NextResponse('Forbidden', { status: 403 });
 }
 
+/**
+ * B. The Ingest Engine (POST Request)
+ * WhatsApp Cloud API Incoming Message Handler
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    if (body.object === 'whatsapp_business_account') {
-      for (const entry of body.entry || []) {
-        for (const change of entry.changes || []) {
-          const value = change.value;
-          if (value && value.messages && value.messages.length > 0) {
-            const message = value.messages[0];
-            const senderPhone = message.from;
 
-            // Authentication Gateway
-            const { data: user } = await supabase.from('users').select('id').eq('phone_number', senderPhone).single();
-            if (!user) return NextResponse.json({ status: 'Ignored' }, { status: 200 });
+    // Check if it's a WhatsApp status update or message
+    if (body.object) {
+      if (
+        body.entry &&
+        body.entry[0].changes &&
+        body.entry[0].changes[0] &&
+        body.entry[0].changes[0].value.messages &&
+        body.entry[0].changes[0].value.messages[0]
+      ) {
+        const message = body.entry[0].changes[0].value.messages[0];
+        
+        // Step 1: Extrahiere Absender-Nummer (from) und Text (body)
+        const from = message.from; // Sender phone number
+        const textBody = message.text?.body;
 
-            // Fire & Forget for Vercel Timeouts
-            (async () => {
-              try {
-                if (message.type === 'image') {
-                  const mediaId = message.image.id;
-                  const base64DataUri = await downloadWhatsAppImage(mediaId);
-                  const rawBuffer = Buffer.from(base64DataUri.split(',')[1], 'base64');
-                  
-                  await processIncomingDocument(rawBuffer, user.id, 'whatsapp', senderPhone);
-                } 
-                else if (message.type === 'interactive') {
-                  const payload = message.interactive.button_reply.id; // APPROVE or REJECT
-                  if (payload === 'APPROVE' || payload === 'REJECT') {
-                    await executeApproval(user.id, payload === 'APPROVE');
-                  }
-                }
-              } catch (e) {
-                console.error("WhatsApp Webhook Pipeline Error:", e);
-              }
-            })();
+        if (textBody) {
+          // Step 2: Regex Matching für den Magic Code (FUTR-XXXX)
+          const magicCodeRegex = /^FUTR-[A-Z0-9]{4}$/i;
+          const match = textBody.trim().match(magicCodeRegex);
+
+          if (match) {
+            const magicCode = match[0].toUpperCase();
+            
+            // C. Database Transaction (Supabase Service Role)
+            // Step 3: Query
+            const { data: channel, error: searchError } = await supabaseAdmin
+              .from('channels')
+              .select('id, user_id, connection_status')
+              .eq('magic_code', magicCode)
+              .eq('connection_status', 'pending')
+              .single();
+
+            if (searchError || !channel) {
+              console.log('Magic Code not found or already active.');
+              // Step 5: Error Handling - return 200 OK
+              return new NextResponse('OK', { status: 200 });
+            }
+
+            // Step 4: Update
+            const { error: updateError } = await supabaseAdmin
+              .from('channels')
+              .update({
+                phone_number: from,
+                connection_status: 'active'
+              })
+              .eq('id', channel.id);
+
+            if (updateError) {
+              console.error('Failed to update channel:', updateError);
+              return new NextResponse('OK', { status: 200 });
+            }
+
+            console.log(`Channel coupled successfully for user: ${channel.user_id}`);
+
+            // [TODO: EPISODE 26] 
+            // Hier wird in der nächsten Episode die ausgehende Meta-API 
+            // getriggert, um dem User "Kopplung erfolgreich" zu senden.
           }
         }
       }
+      
+      // Return 200 OK to Meta for all processed requests
+      return new NextResponse('EVENT_RECEIVED', { status: 200 });
+    } else {
+      return new NextResponse('Not Found', { status: 404 });
     }
-    return NextResponse.json({ status: 'Event received' }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ status: 'Error' }, { status: 200 });
+    console.error('Webhook Error:', error);
+    // Step 5: Error Handling - return 200 OK to avoid blocking Meta retries
+    return new NextResponse('Internal Server Error', { status: 200 });
   }
 }
