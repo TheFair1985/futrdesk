@@ -210,10 +210,10 @@ export default function DashboardClient({ profile }: any) {
         data.push({ name: `Woche ${i+1}`, Aktuell: currentBilled * (0.2 + (i*0.05)), Vorher: previousBilled * 0.25 });
       }
     } else {
-      data.push({ name: '1', Aktuell: currentBilled * 0.2, Vorher: previousBilled * 0.25 });
-      data.push({ name: '2', Aktuell: currentBilled * 0.25, Vorher: previousBilled * 0.25 });
-      data.push({ name: '3', Aktuell: currentBilled * 0.35, Vorher: previousBilled * 0.25 });
-      data.push({ name: '4', Aktuell: currentBilled * 0.2, Vorher: previousBilled * 0.25 });
+      data.push({ name: '1', Aktuell: currentBilled * 0.45, Vorher: previousBilled * 0.25 });
+      data.push({ name: '2', Aktuell: currentBilled * 0.45, Vorher: previousBilled * 0.25 });
+      data.push({ name: '3', Aktuell: currentBilled * 0.10, Vorher: previousBilled * 0.25 });
+      data.push({ name: '4', Aktuell: 0, Vorher: previousBilled * 0.25 });
     }
     return data;
   }, [timeframe, currentPeriodInvoices, previousPeriodInvoices, currentBilled, previousBilled]);
@@ -308,11 +308,11 @@ export default function DashboardClient({ profile }: any) {
         </div>
 
         {/* RIGHT SIDE: COMPANY & TIME TOGGLE */}
-        <div className="flex flex-col items-center shrink-0 relative z-10">
+        <div className="flex flex-col items-center justify-between shrink-0 relative z-10 min-h-full">
           
           {/* Centered Logo above Toggle */}
           <div 
-            className="relative w-48 h-24 my-4 opacity-50 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
+            className="relative flex-1 w-56 min-h-[120px] mb-4 mt-2 opacity-50 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
             onClick={() => document.getElementById('logo-upload')?.click()}
           >
             <Image src={customLogo || "/image.png"} fill className="object-contain object-center" alt="Company Logo" />
