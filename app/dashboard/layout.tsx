@@ -86,6 +86,7 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <main className="flex-1 relative overflow-y-auto">
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
         <div className="max-w-[1400px] mx-auto p-12 lg:p-16 relative z-10">
           {children}
         </div>

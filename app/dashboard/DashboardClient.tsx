@@ -222,46 +222,19 @@ export default function DashboardClient({ profile }: any) {
     { month: `Mai ${String(selectedYear).slice(2)}`, generated: 512, zugferd: 512, clientSent: 512, taxSent: true, zipDays: 0, status: 'completed', desc: 'Sammel-Export erfolgreich an DATEV übermittelt. Zyklus GoBD-konform geschlossen.' },
   ];
 
+  // AI Analysis Generation based on real data (Report Style)
   const generateAiInsights = () => {
-    const insights = [];
-    
-    // Actionable Insight 1: Fix needed
-    insights.push({
-      type: 'alert',
-      text: '3 Ausgangsrechnungen (August) können nicht verarbeitet werden, da die Umsatzsteuer-ID des Empfängers fehlt.',
-      actionText: 'Jetzt beheben',
-      link: '/dashboard/archive?filter=needs_fix'
-    });
-
-    // Actionable Insight 2: Customer drop
-    if (leaderboard.length > 0 && leaderboard[leaderboard.length - 1].growth < -20) {
-      const lostCustomer = leaderboard[leaderboard.length - 1];
-      insights.push({
-        type: 'warning',
-        text: `Kunde '${lostCustomer.name}' hat einen starken Umsatzrückgang (${lostCustomer.growth.toFixed(1)}%).`,
-        actionText: 'Kundenakte ansehen',
-        link: '#'
-      });
-    } else {
-      // Default Insight if no drop
-      insights.push({
-        type: 'success',
-        text: `Saisonales Muster: Der zu erwartende Einbruch im August wurde durch den Neukunden-Zuwachs in 80333 abgefangen.`,
-        actionText: 'Detail-Analyse öffnen',
-        link: '#'
-      });
-    }
-
-    return insights;
+    return [
+      `Basierend auf der aktuellen Datenlage für ${selectedYear} zeigt sich eine deutliche saisonale Prägung im August. Das aktuelle Fakturierungsvolumen liegt bei 142 Belegen, was einem temporären Rückgang entspricht.`,
+      `Die KI-Hochrechnung prognostiziert für das Quartalsende jedoch einen starken Rebound auf ca. ${forecast.toLocaleString('de-DE', {style:'currency', currency:'EUR'})}, angetrieben durch das konstante Wachstum in der Kernregion München (80333). Keine kritischen Liquiditätsengpässe erkennbar.`
+    ];
   };
   const aiInsights = generateAiInsights();
 
   if (!mounted) return <div className="min-h-screen bg-gray-50 flex items-center justify-center font-bold text-core/20">Inititalisiere Dashboard Engine...</div>;
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show" className="flex flex-col gap-10 relative">
-      {/* Soft Grid Background */}
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none rounded-[32px]" />
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="flex flex-col gap-10 relative w-full overflow-hidden">
       
       {/* -------------------------------------------------------------
           HEADER & SUPER-METRICS (The Cockpit)
@@ -317,13 +290,13 @@ export default function DashboardClient({ profile }: any) {
         </div>
 
         {/* RIGHT SIDE: COMPANY & TIME TOGGLE */}
-        <div className="flex flex-col items-end gap-6 shrink-0">
+        <div className="flex flex-col items-end gap-8 shrink-0">
           
-          <div className="flex flex-col items-end gap-2">
-            <div className="w-10 h-10 bg-gray-50 rounded-xl border border-shading/10 flex items-center justify-center p-2 shadow-sm">
-              <Image src="/futrdesk.png" width={24} height={24} alt="Company Logo Mockup" className="opacity-80 contrast-125" />
+          <div className="flex flex-col items-end gap-2.5">
+            <div className="w-12 h-12 bg-white rounded-2xl border border-shading/10 flex items-center justify-center shadow-sm overflow-hidden">
+              <Image src="/futrdesk.png" width={48} height={48} alt="Company Logo Mockup" className="opacity-90 contrast-125 object-cover" />
             </div>
-            <h2 className="text-lg font-black text-core tracking-tight">{profile?.company_name || 'Acme Corp. GmbH'}</h2>
+            <h2 className="text-lg font-black text-core tracking-tight">{profile?.company_name || 'FutrDesk GmbH'}</h2>
           </div>
 
           <div className="flex flex-col items-end gap-2">
@@ -443,42 +416,69 @@ export default function DashboardClient({ profile }: any) {
       </div>
 
       {/* -------------------------------------------------------------
-          ROW 3: KI INSIGHTS WIDGET (Actionable Empfehlungen)
+          ROW 3: KI INSIGHTS WIDGET (Report/Analyse)
           ------------------------------------------------------------- */}
-      <motion.div variants={itemVariants} className="bg-core text-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col md:flex-row items-stretch gap-10 relative overflow-hidden">
+      <motion.div variants={itemVariants} className="bg-core text-white rounded-[32px] p-6 lg:p-10 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col xl:flex-row items-stretch gap-10 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
           <Sparkles className="w-64 h-64 -mt-20 -mr-20" />
         </div>
         
-        {/* Left: Summary Metric */}
-        <div className="w-full md:w-1/4 relative z-10 flex flex-col justify-center items-start md:border-r border-white/10 md:pr-10">
-           <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6 border border-white/10">
-             <Bot className="w-6 h-6 text-action" />
+        {/* Left: Modern Sleek Visual */}
+        <div className="w-full xl:w-1/3 relative z-10 flex flex-col justify-center items-start xl:border-r border-white/10 xl:pr-10 min-h-[250px]">
+           <div className="flex items-center gap-3 mb-6">
+             <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
+               <Activity className="w-5 h-5 text-action" />
+             </div>
+             <div>
+               <h3 className="text-xl font-black text-white leading-none">KI Prognose</h3>
+               <span className="text-xs text-white/50 font-mono">Real-Time Analyse</span>
+             </div>
            </div>
-           <h3 className="text-3xl font-black mb-2">Empfehlungen</h3>
-           <p className="text-white/50 text-sm leading-relaxed">
-             Die KI hat {aiInsights.length} actionable Insights in deinen Daten gefunden, die deine Aufmerksamkeit erfordern.
-           </p>
+           
+           <div className="w-full flex-1 relative bg-white/5 rounded-2xl border border-white/10 p-6 flex flex-col justify-end overflow-hidden">
+             {/* Abstract modern visual representing forecasting */}
+             <div className="flex items-end gap-2 h-full w-full opacity-80">
+               {[40, 60, 45, 80, 50, 100].map((h, i) => (
+                 <div key={i} className="flex-1 bg-gradient-to-t from-action to-action/20 rounded-t-sm" style={{ height: `${h}%` }} />
+               ))}
+             </div>
+             <div className="absolute top-6 left-6">
+               <div className="text-3xl font-black font-mono tracking-tighter text-white">{forecast.toLocaleString('de-DE', {style:'currency', currency:'EUR'})}</div>
+               <div className="text-xs text-action font-bold uppercase tracking-widest mt-1">Erwarteter Endspurt</div>
+             </div>
+           </div>
         </div>
 
-        {/* Right: LLM Chat Bubbles (Actionable) */}
-        <div className="flex-1 flex flex-col justify-center gap-6 relative z-10 w-full">
-          {aiInsights.map((insight, idx) => (
-            <div key={idx} className="flex items-start gap-4 w-full max-w-3xl">
-              <div className="w-10 h-10 rounded-full bg-white/10 border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-inner mt-1">
-                <Image src="/futrdesk.png" alt="Futrdesk Logo" width={24} height={24} className="opacity-90 grayscale contrast-150" />
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-5 text-[14px] leading-relaxed text-white/90 font-medium flex flex-col gap-4">
-                <span>{insight.text}</span>
-                <a 
-                  href={insight.link} 
-                  className="flex items-center gap-2 w-fit bg-action text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-action/90 transition-colors shadow-sm"
-                >
-                  {insight.actionText} <ArrowUpRight className="w-3.5 h-3.5" />
-                </a>
+        {/* Right: ChatGPT Screenshot Mockup */}
+        <div className="flex-1 flex flex-col justify-center relative z-10 w-full rounded-2xl overflow-hidden shadow-[0_0_0_12px_rgba(45,49,66,1)] border border-white/5 bg-white">
+          {/* Mock Header */}
+          <div className="h-12 border-b border-gray-100 flex items-center px-4 bg-gray-50/50">
+            <span className="text-xs font-bold text-gray-400">FutrDesk Intelligence Model v4</span>
+          </div>
+          
+          <div className="p-6 flex flex-col gap-6 bg-white max-h-[300px] overflow-y-auto">
+            {/* User Prompt Mock */}
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-core text-white flex items-center justify-center font-bold text-xs shrink-0">FD</div>
+              <div className="pt-1.5">
+                <p className="text-sm font-semibold text-gray-800">Generiere einen aktuellen Performance-Bericht inkl. saisonaler Effekte.</p>
               </div>
             </div>
-          ))}
+
+            {/* AI Response Mock */}
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex flex-col gap-3 pt-1">
+                {aiInsights.map((insight, idx) => (
+                  <p key={idx} className="text-sm text-gray-700 leading-relaxed font-medium">
+                    {insight}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
 
