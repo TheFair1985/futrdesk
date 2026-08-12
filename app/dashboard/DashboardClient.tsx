@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from "framer-motion";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
-import { TrendingUp, Users, CheckCircle2, Smartphone, Send, Mail, Map, Zap, ArrowUpRight, ArrowDownRight, Clock, Archive, Trophy, Sparkles, Activity } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { TrendingUp, Users, CheckCircle2, Smartphone, Send, Mail, Map, Zap, ArrowUpRight, ArrowDownRight, Clock, Archive, Trophy, Sparkles, Activity, Info } from "lucide-react";
 import { cn } from "../../lib/utils";
+
+const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false, loading: () => <div className="w-full h-full bg-gray-50 animate-pulse rounded-2xl flex items-center justify-center text-core/20 font-bold text-sm">Karte wird geladen...</div> });
 
 const containerVariants: any = {
   hidden: { opacity: 0 },
@@ -33,20 +36,18 @@ const generateMockInvoices = () => {
     { name: "Microsoft", share: 0.05 }
   ];
 
-  // Munich & 150km radius PLZs
+  // Munich & 150km radius PLZs with Lat/Lng for Leaflet
   const regions = [
-    { name: "München Zentrum (80333)", zip: "80333", prob: 0.4 },
-    { name: "Augsburg (86150)", zip: "86150", prob: 0.2 },
-    { name: "Ingolstadt (85049)", zip: "85049", prob: 0.15 },
-    { name: "Rosenheim (83022)", zip: "83022", prob: 0.15 },
-    { name: "Garmisch (82467)", zip: "82467", prob: 0.1 },
+    { name: "München Zentrum (80333)", zip: "80333", prob: 0.4, lat: 48.1466, lng: 11.5670 },
+    { name: "Augsburg (86150)", zip: "86150", prob: 0.2, lat: 48.3715, lng: 10.8985 },
+    { name: "Ingolstadt (85049)", zip: "85049", prob: 0.15, lat: 48.7665, lng: 11.4258 },
+    { name: "Rosenheim (83022)", zip: "83022", prob: 0.15, lat: 47.8561, lng: 12.1190 },
+    { name: "Garmisch (82467)", zip: "82467", prob: 0.1, lat: 47.4921, lng: 11.0955 },
   ];
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const month = d.getMonth(); // 0 = Jan, 1 = Feb, 7 = Aug
+    const month = d.getMonth();
     const isBadMonth = month === 0 || month === 1 || month === 7;
-    
-    // Base daily probability of an invoice
     const dailyInvoices = isBadMonth ? Math.floor(Math.random() * 2) + 1 : Math.floor(Math.random() * 5) + 3;
 
     for (let i = 0; i < dailyInvoices; i++) {
@@ -72,7 +73,6 @@ const generateMockInvoices = () => {
         }
       }
 
-      // Random amount between 150 and 900
       const amount = Math.floor(Math.random() * 750) + 150;
 
       invoices.push({
@@ -82,7 +82,9 @@ const generateMockInvoices = () => {
         gross_amount: amount,
         status: Math.random() > 0.05 ? 'completed' : 'needs_fix',
         zip_code: selectedRegion.zip,
-        region_name: selectedRegion.name
+        region_name: selectedRegion.name,
+        lat: selectedRegion.lat,
+        lng: selectedRegion.lng
       });
     }
   }
@@ -92,10 +94,10 @@ const generateMockInvoices = () => {
 const cachedMockInvoices = generateMockInvoices();
 
 export default function DashboardClient({ profile }: any) {
-  const [timeframe, setTimeframe] = useState<Timeframe>('jahr'); // Default to year to show off seasonality
+  const [timeframe, setTimeframe] = useState<Timeframe>('jahr');
 
   // FILTER LOGIC
-  const now = new Date(2026, 7, 12); // Simulated "now" is August 12, 2026
+  const now = new Date(2026, 7, 12);
   
   const currentPeriodInvoices = useMemo(() => {
     return cachedMockInvoices.filter((inv) => {
@@ -128,16 +130,16 @@ export default function DashboardClient({ profile }: any) {
 
   // FORECAST LOGIC
   const forecast = useMemo(() => {
-    if (timeframe === 'monat') return (currentBilled / 12) * 31; // Extrapolate August 12
-    if (timeframe === 'quartal') return (currentBilled / 42) * 90; // Approx 42 days into Q3
-    if (timeframe === 'jahr') return (currentBilled / 224) * 365; // Approx 224 days into 2026
+    if (timeframe === 'monat') return (currentBilled / 12) * 31;
+    if (timeframe === 'quartal') return (currentBilled / 42) * 90;
+    if (timeframe === 'jahr') return (currentBilled / 224) * 365;
     return currentBilled;
   }, [timeframe, currentBilled]);
 
   // LEADERBOARD LOGIC
-  const getLeaderboard = (invoices: any[]) => {
+  const getLeaderboard = (invoices: any[], field: string) => {
     const map: Record<string, number> = {};
-    invoices.forEach(i => map[i.vendor_name] = (map[i.vendor_name] || 0) + i.gross_amount);
+    invoices.forEach(i => map[i[field]] = (map[i[field]] || 0) + i.gross_amount);
     const total = Object.values(map).reduce((a,b)=>a+b, 0);
     return Object.entries(map)
       .sort((a, b) => b[1] - a[1])
@@ -150,8 +152,8 @@ export default function DashboardClient({ profile }: any) {
       }));
   };
 
-  const currentLeaderboard = getLeaderboard(currentPeriodInvoices);
-  const prevLeaderboard = getLeaderboard(previousPeriodInvoices);
+  const currentLeaderboard = getLeaderboard(currentPeriodInvoices, 'vendor_name');
+  const prevLeaderboard = getLeaderboard(previousPeriodInvoices, 'vendor_name');
   const leaderboard = currentLeaderboard.map(curr => {
     const prev = prevLeaderboard.find(p => p.name === curr.name);
     const pAmount = prev ? prev.amount : 0;
@@ -159,13 +161,25 @@ export default function DashboardClient({ profile }: any) {
     return { ...curr, growth: g, status: g >= 0 ? 'up' : 'down' };
   });
 
-  // GEO DATA
-  const getGeoData = (invoices: any[]) => {
-    const map: Record<string, number> = {};
-    invoices.forEach(i => map[i.region_name] = (map[i.region_name] || 0) + i.gross_amount);
-    return Object.entries(map).map(([region, value]) => ({ region, value }));
-  };
-  const geoData = getGeoData(currentPeriodInvoices);
+  const currentGeoBoard = getLeaderboard(currentPeriodInvoices, 'region_name');
+  const prevGeoBoard = getLeaderboard(previousPeriodInvoices, 'region_name');
+  const geoLeaderboard = currentGeoBoard.map(curr => {
+    const prev = prevGeoBoard.find(p => p.name === curr.name);
+    const pAmount = prev ? prev.amount : 0;
+    const g = pAmount === 0 ? 100 : ((curr.amount - pAmount) / pAmount) * 100;
+    return { ...curr, growth: g, status: g >= 0 ? 'up' : 'down' };
+  });
+
+  // MAP DATA (Aggregated by Lat/Lng)
+  const mapData = useMemo(() => {
+    const map: Record<string, { lat: number, lng: number, value: number, region: string }> = {};
+    currentPeriodInvoices.forEach(i => {
+      const key = `${i.lat}-${i.lng}`;
+      if (!map[key]) map[key] = { lat: i.lat, lng: i.lng, value: 0, region: i.region_name };
+      map[key].value += i.gross_amount;
+    });
+    return Object.values(map);
+  }, [currentPeriodInvoices]);
 
   // TREND DATA
   const trendData = useMemo(() => {
@@ -178,9 +192,8 @@ export default function DashboardClient({ profile }: any) {
         data.push({ name: monthNames[i], current: currMonth, previous: prevMonth });
       }
     } else if (timeframe === 'monat') {
-      // 4 weeks roughly
       for(let i=0; i<4; i++) {
-        data.push({ name: `W${i+1}`, current: currentBilled * (0.2 + (i*0.05)), previous: previousBilled * 0.25 }); // Highly mocked shape
+        data.push({ name: `W${i+1}`, current: currentBilled * (0.2 + (i*0.05)), previous: previousBilled * 0.25 });
       }
     } else {
       data.push({ name: 'M1', current: currentBilled * 0.3, previous: previousBilled * 0.33 });
@@ -190,37 +203,30 @@ export default function DashboardClient({ profile }: any) {
     return data;
   }, [timeframe, currentPeriodInvoices, previousPeriodInvoices, currentBilled, previousBilled]);
 
-  // FLOW CHECK (Historial Tracker for 2026)
+  // HISTORICAL PIPELINE DATA (Verarbeitungs-Historie)
   const flowCheckData = [
     { month: 'August 26', generated: 142, zugferd: 142, clientSent: 140, taxSent: false, zipDays: 19, status: 'active' },
     { month: 'Juli 26', generated: 450, zugferd: 450, clientSent: 449, taxSent: true, zipDays: 0, status: 'completed' },
     { month: 'Juni 26', generated: 480, zugferd: 480, clientSent: 480, taxSent: true, zipDays: 0, status: 'completed' },
     { month: 'Mai 26', generated: 512, zugferd: 510, clientSent: 510, taxSent: true, zipDays: 0, status: 'completed' },
-    { month: 'Apr 26', generated: 490, zugferd: 490, clientSent: 490, taxSent: true, zipDays: 0, status: 'completed' },
-    { month: 'Mär 26', generated: 520, zugferd: 520, clientSent: 520, taxSent: true, zipDays: 0, status: 'completed' },
   ];
 
   // AI Insights Generation based on real data
   const generateAiInsights = () => {
     const insights = [];
-    
-    // Seasonality insight
     if (timeframe === 'jahr') {
       insights.push(`Saisonales Muster erkannt: Januar, Februar und August zeigen konsistente Umsatzdellen (-60% vs. Jahresdurchschnitt). Urlaubszeiten einkalkulieren.`);
     } else if (timeframe === 'monat' && now.getMonth() === 7) {
-      insights.push(`Warnung: Der August-Umsatz ist traditionell schwach. Die KI-Prognose rechnet mit ${forecast.toLocaleString('de-DE', {style:'currency', currency:'EUR'})} am Monatsende.`);
+      insights.push(`Hinweis: Der August-Umsatz ist erfahrungsgemäß urlaubsbedingt schwach. Die KI-Prognose geht von einem Endspurt auf ${forecast.toLocaleString('de-DE', {style:'currency', currency:'EUR'})} am Monatsende aus.`);
     }
 
-    // Geofence insight
-    const munichShare = geoData.find(g => g.region.includes('80333'))?.value || 0;
-    const munichPercent = currentBilled > 0 ? Math.round((munichShare / currentBilled) * 100) : 0;
-    if (munichPercent > 30) {
-      insights.push(`Extremer lokaler Fokus: ${munichPercent}% des fakturierten Umsatzes entsteht im 15km Radius um München Zentrum (80333).`);
+    const munichShare = geoLeaderboard.find(g => g.name.includes('80333'))?.share || 0;
+    if (munichShare > 30) {
+      insights.push(`Standort-Fokus: ${munichShare.toFixed(1)}% des fakturierten Umsatzes entsteht direkt im Zentrum von München (80333). Keine unmittelbaren Risiken erkennbar.`);
     }
 
-    // Customer insight
     if (leaderboard.length > 0 && leaderboard[0].growth > 10) {
-      insights.push(`Abhängigkeitswarnung: '${leaderboard[0].name}' wächst rasant (+${leaderboard[0].growth.toFixed(1)}%) und macht nun ${leaderboard[0].share.toFixed(1)}% des Gesamtvolumens aus.`);
+      insights.push(`Wachstumsnotiz: Der Kunde '${leaderboard[0].name}' wächst überdurchschnittlich (+${leaderboard[0].growth.toFixed(1)}%) und macht nun ${leaderboard[0].share.toFixed(1)}% des Gesamtvolumens aus.`);
     }
 
     return insights;
@@ -239,17 +245,23 @@ export default function DashboardClient({ profile }: any) {
           ------------------------------------------------------------- */}
       <motion.div variants={itemVariants} className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 bg-white p-8 rounded-[32px] shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10">
         
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 relative">
           <div className="flex items-center gap-3">
-            <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-core font-sans">
+            <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-core font-sans group relative cursor-help">
               {currentBilled.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+              <span className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-max bg-core text-white text-xs p-2 rounded shadow-xl z-50">
+                Summe aller Ausgangsrechnungen (Netto + MwSt) im ausgewählten Zeitraum.
+              </span>
             </h1>
             <div className={cn(
-              "flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm",
+              "flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm relative group cursor-help",
               growth > 0 ? "bg-green-500/10 text-green-600 border border-green-500/20" : "bg-red-500/10 text-red-600 border border-red-500/20"
             )}>
               {growth > 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
               {Math.abs(growth).toFixed(1)}% vs. {timeframe === 'monat' ? 'Vormonat' : 'Vorjahr'}
+              <span className="absolute top-full left-0 mt-2 hidden group-hover:block w-max bg-core text-white text-xs font-normal p-2 rounded shadow-xl z-50">
+                Vergleichswert Vorperiode: {previousBilled.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+              </span>
             </div>
           </div>
           
@@ -258,8 +270,11 @@ export default function DashboardClient({ profile }: any) {
               <TrendingUp className="w-4 h-4 text-action" /> Fakturierter Ausgangsumsatz
             </span>
             <div className="h-4 w-px bg-shading/30" />
-            <span className="text-action font-bold flex items-center gap-1.5 bg-action/5 px-2 py-1 rounded-md">
+            <span className="text-action font-bold flex items-center gap-1.5 bg-action/5 px-2 py-1 rounded-md relative group cursor-help">
               <Zap className="w-4 h-4" /> KI-Prognose: {forecast.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+              <span className="absolute top-full left-0 mt-2 hidden group-hover:block w-[250px] bg-core text-white text-xs font-normal p-2 rounded shadow-xl z-50 leading-relaxed">
+                Wird basierend auf dem aktuellen Tagesdurchschnitt linear auf das Ende des Zeitraums hochgerechnet.
+              </span>
             </span>
           </div>
         </div>
@@ -278,7 +293,7 @@ export default function DashboardClient({ profile }: any) {
               {timeframe === t && (
                 <motion.div layoutId="timeframe-bubble" className="absolute inset-0 bg-white rounded-xl shadow-[0_2px_10px_rgb(0,0,0,0.06)] border border-shading/5 -z-10" transition={{ type: "spring", stiffness: 400, damping: 30 }} />
               )}
-              {t}
+              {t === 'monat' ? 'Monat' : t === 'quartal' ? 'Quartal' : 'Jahr'}
             </button>
           ))}
         </div>
@@ -286,19 +301,19 @@ export default function DashboardClient({ profile }: any) {
 
 
       {/* -------------------------------------------------------------
-          ROW 1: THE RACE (Leaderboard & Trend)
+          ROW 2: THE RACE (Leaderboard & Trend)
           ------------------------------------------------------------- */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
-        {/* LEADERBOARD (Top Customers Championship) */}
+        {/* LEADERBOARD (Top Kunden Rangliste) */}
         <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 flex flex-col">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-12 h-12 rounded-2xl bg-action/10 flex items-center justify-center">
               <Trophy className="w-6 h-6 text-action" />
             </div>
             <div>
-              <h3 className="font-bold text-core text-lg">Top Kunden Race</h3>
-              <p className="text-xs text-core/50 font-mono">Volumen-Ranking ({timeframe})</p>
+              <h3 className="font-bold text-core text-lg">Top Kunden Rangliste</h3>
+              <p className="text-xs text-core/50 font-mono">Volumen-Auswertung ({timeframe})</p>
             </div>
           </div>
 
@@ -307,7 +322,7 @@ export default function DashboardClient({ profile }: any) {
               <div key={idx} className="flex items-center gap-4 group">
                 <div className="font-mono font-black text-xl text-core/20 w-6">{item.rank}</div>
                 <div className="flex-1 flex flex-col">
-                  <div className="flex justify-between items-end mb-1.5">
+                  <div className="flex justify-between items-end mb-1.5 relative group-hover:cursor-help">
                     <span className="font-bold text-core text-sm truncate pr-2">{item.name}</span>
                     <span className="font-mono text-sm font-bold text-core">{item.amount.toLocaleString('de-DE')} €</span>
                   </div>
@@ -316,8 +331,219 @@ export default function DashboardClient({ profile }: any) {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <motion.div 
-                        initial={{ width: 0 }} 
-                        animate={{ width: `${item.share}%` }} 
+                        initial={{ width: 0 }} animate={{ width: `${item.share}%` }} 
+                        transition={{ duration: 1, ease: "easeOut", delay: idx * 0.1 }}
+                        className={cn("h-full rounded-full", item.rank === 1 ? "bg-action" : "bg-core")} 
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-core/50 w-8" title={`Anteil am Gesamtumsatz: ${item.share.toFixed(1)}%`}>{item.share.toFixed(1)}%</span>
+                    <span className={cn(
+                      "text-[10px] font-mono font-bold flex items-center w-14",
+                      item.status === 'up' ? "text-green-500" : "text-red-500"
+                    )} title={`Wachstum gegenüber der Vorperiode`}>
+                      {item.status === 'up' ? '▲' : '▼'} {Math.abs(item.growth).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* REVENUE TREND (Umsatz-Entwicklung) */}
+        <motion.div variants={itemVariants} className="xl:col-span-2 bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 flex flex-col">
+          <div className="flex justify-between items-start mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-core/5 flex items-center justify-center">
+                <Activity className="w-6 h-6 text-core" />
+              </div>
+              <div>
+                <h3 className="font-bold text-core text-lg">Umsatz-Entwicklung</h3>
+                <p className="text-xs text-core/50 font-mono">Aktueller Zeitraum vs. Vorperiode (inkl. Saisonalität)</p>
+              </div>
+            </div>
+            {/* Legend */}
+            <div className="flex items-center gap-4 text-xs font-bold font-mono bg-gray-50 px-4 py-2 rounded-xl">
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-action" /> Aktuell</div>
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-core/20" /> Vorher</div>
+            </div>
+          </div>
+          
+          <div className="flex-1 min-h-[260px] -ml-4 relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trendData}>
+                <defs>
+                  <linearGradient id="colorCurrent" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef8354" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#ef8354" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }} itemStyle={{ fontWeight: 'bold' }} />
+                <Area type="monotone" dataKey="previous" stroke="#2d3142" strokeOpacity={0.2} strokeWidth={2} strokeDasharray="5 5" fill="none" />
+                <Area type="monotone" dataKey="current" stroke="#ef8354" strokeWidth={4} fillOpacity={1} fill="url(#colorCurrent)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* -------------------------------------------------------------
+          ROW 3: KI INSIGHTS WIDGET (Expanded above Flow Check)
+          ------------------------------------------------------------- */}
+      <motion.div variants={itemVariants} className="bg-core text-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-6 opacity-10">
+          <Sparkles className="w-64 h-64 -mt-20 -mr-20" />
+        </div>
+        <div className="flex flex-col gap-3 relative z-10 w-full md:w-1/4">
+          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/10">
+            <Sparkles className="w-6 h-6 text-action" />
+          </div>
+          <h3 className="font-bold text-xl leading-tight">Futrdesk<br/>Intelligenz</h3>
+          <p className="text-white/40 text-xs font-mono">Echtzeit Analyse der Ausgangsrechnungen</p>
+        </div>
+        
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+          {aiInsights.map((insight, idx) => (
+            <div key={idx} className="flex gap-4 items-start bg-white/5 p-5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+              <div className="w-2 h-2 rounded-full bg-action shrink-0 mt-2 shadow-[0_0_8px_rgba(239,131,84,0.6)]" />
+              <p className="text-white/90 leading-relaxed font-sans font-medium text-sm">{insight}</p>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
+
+      {/* -------------------------------------------------------------
+          ROW 4: HISTORICAL PIPELINE TRACKER (Verarbeitungs-Historie)
+          ------------------------------------------------------------- */}
+      <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+          <Archive className="w-64 h-64" />
+        </div>
+        
+        <div className="flex items-center justify-between mb-8 relative z-10">
+          <div>
+            <h3 className="font-bold text-core text-xl flex items-center gap-2">
+              Verarbeitungs-Historie 
+              <div className="group relative cursor-help">
+                <Info className="w-4 h-4 text-core/40" />
+                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-[300px] bg-core text-white text-xs font-normal p-3 rounded shadow-xl z-50 leading-relaxed">
+                  Überwacht den GoBD-konformen Ablauf: <br/><br/>
+                  <span className="text-green-400 font-bold">Grün (Archiviert):</span> Alle Schritte inkl. Steuerberater-Export abgeschlossen. Keine Aktion nötig.<br/>
+                  <span className="text-action font-bold">Orange (In Bearbeitung):</span> ZUGFeRD generiert, wartet auf turnusmäßigen Sammel-Export zum Steuerberater. Keine Aktion nötig.
+                </div>
+              </div>
+            </h3>
+            <p className="text-sm text-core/50 mt-1">Lückenlose Nachverfolgung des GoBD-Workflows</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 relative z-10">
+          {/* Table Header */}
+          <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-mono font-bold text-core/40 uppercase tracking-widest border-b border-shading/20">
+            <div className="col-span-2">Monat</div>
+            <div className="col-span-2">Belege</div>
+            <div className="col-span-3">ZUGFeRD Konvertierung</div>
+            <div className="col-span-3">Sammel-Export (StB)</div>
+            <div className="col-span-2 text-right">Status</div>
+          </div>
+
+          {/* Table Rows */}
+          {flowCheckData.map((row, idx) => (
+            <div key={idx} className="grid grid-cols-12 gap-4 items-center px-6 py-4 bg-gray-50/50 hover:bg-gray-50 rounded-2xl transition-colors border border-transparent hover:border-shading/10 group">
+              <div className="col-span-2 font-bold text-core">{row.month}</div>
+              
+              <div className="col-span-2 font-mono font-bold text-core">{row.generated}</div>
+              
+              <div className="col-span-3 flex items-center gap-3">
+                <div className="flex-1 group/tooltip relative">
+                  <div className="flex justify-between text-[10px] font-mono font-bold mb-1.5">
+                    <span className="text-core/60">Fortschritt</span>
+                    <span className={row.zugferd === row.generated ? "text-green-500" : "text-action"}>{Math.round((row.zugferd/row.generated)*100)}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className={cn("h-full rounded-full", row.zugferd === row.generated ? "bg-green-500" : "bg-action")} style={{ width: `${(row.zugferd/row.generated)*100}%` }} />
+                  </div>
+                  <span className="absolute bottom-full left-0 mb-2 hidden group-hover/tooltip:block w-max bg-core text-white text-[10px] p-2 rounded shadow-xl z-50">
+                    {row.zugferd} von {row.generated} Belegen GoBD-konform umgewandelt.
+                  </span>
+                </div>
+              </div>
+
+              <div className="col-span-3 flex items-center gap-2">
+                {row.taxSent ? (
+                  <div className="flex items-center gap-2 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-lg text-xs font-bold w-fit border border-green-500/20">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Erledigt
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-action/10 text-action px-3 py-1.5 rounded-lg text-xs font-bold w-fit border border-action/20">
+                    <Clock className="w-3.5 h-3.5" /> Start in {row.zipDays} Tagen
+                  </div>
+                )}
+              </div>
+
+              <div className="col-span-2 flex justify-end">
+                <span className={cn(
+                  "text-[10px] font-mono font-black uppercase tracking-widest px-3 py-1.5 rounded-full border",
+                  row.status === 'completed' ? "bg-core/5 text-core/50 border-core/10" : "bg-action/10 text-action border-action/20"
+                )}>
+                  {row.status === 'completed' ? 'Archiviert' : 'In Bearbeitung'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* -------------------------------------------------------------
+          ROW 5: GEOGRAPHY (Interactive Map & Region Leaderboard)
+          ------------------------------------------------------------- */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        
+        {/* LEAFLET MAP */}
+        <motion.div variants={itemVariants} className="xl:col-span-2 bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 flex flex-col">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-2xl bg-core/5 flex items-center justify-center">
+              <Map className="w-6 h-6 text-core" />
+            </div>
+            <div>
+              <h3 className="font-bold text-core text-lg">Geografische Verteilung</h3>
+              <p className="text-xs text-core/50 font-mono">Hotspots & Umsatzkonzentration (Simulation München)</p>
+            </div>
+          </div>
+
+          <div className="flex-1 w-full min-h-[300px] bg-gray-50 rounded-2xl overflow-hidden border border-shading/10 relative z-0">
+            <MapComponent geoData={mapData} />
+          </div>
+        </motion.div>
+
+        {/* REGION LEADERBOARD */}
+        <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 flex flex-col">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-action/10 flex items-center justify-center">
+              <Trophy className="w-6 h-6 text-action" />
+            </div>
+            <div>
+              <h3 className="font-bold text-core text-lg">Top Regionen</h3>
+              <p className="text-xs text-core/50 font-mono">Volumen nach PLZ ({timeframe})</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-5 flex-1">
+            {geoLeaderboard.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-4 group">
+                <div className="font-mono font-black text-xl text-core/20 w-6">{item.rank}</div>
+                <div className="flex-1 flex flex-col">
+                  <div className="flex justify-between items-end mb-1.5">
+                    <span className="font-bold text-core text-sm truncate pr-2" title={item.name}>{item.name.split(' ')[0]}</span>
+                    <span className="font-mono text-sm font-bold text-core">{item.amount.toLocaleString('de-DE')} €</span>
+                  </div>
+                  
+                  {/* Dense Data Bar */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }} animate={{ width: `${item.share}%` }} 
                         transition={{ duration: 1, ease: "easeOut", delay: idx * 0.1 }}
                         className={cn("h-full rounded-full", item.rank === 1 ? "bg-action" : "bg-core")} 
                       />
@@ -336,165 +562,8 @@ export default function DashboardClient({ profile }: any) {
           </div>
         </motion.div>
 
-        {/* REVENUE TREND (Dense Area Chart) */}
-        <motion.div variants={itemVariants} className="xl:col-span-2 bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 flex flex-col">
-          <div className="flex justify-between items-start mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-core/5 flex items-center justify-center">
-                <Activity className="w-6 h-6 text-core" />
-              </div>
-              <div>
-                <h3 className="font-bold text-core text-lg">Cashflow Momentum</h3>
-                <p className="text-xs text-core/50 font-mono">Aktueller Zeitraum vs. Vorperiode (inkl. Saisonalität)</p>
-              </div>
-            </div>
-            {/* Legend */}
-            <div className="flex items-center gap-4 text-xs font-bold font-mono bg-gray-50 px-4 py-2 rounded-xl">
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-action" /> Aktuell</div>
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-core/20" /> Vorher</div>
-            </div>
-          </div>
-          
-          <div className="flex-1 min-h-[260px] -ml-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorCurrent" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef8354" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#ef8354" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }} itemStyle={{ fontWeight: 'bold' }} />
-                <Area type="monotone" dataKey="previous" stroke="#2d3142" strokeOpacity={0.2} strokeWidth={2} strokeDasharray="5 5" fill="none" />
-                <Area type="monotone" dataKey="current" stroke="#ef8354" strokeWidth={4} fillOpacity={1} fill="url(#colorCurrent)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
       </div>
 
-
-      {/* -------------------------------------------------------------
-          ROW 2: THE FLOW CHECK (Historical Pipeline Tracker)
-          ------------------------------------------------------------- */}
-      <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-          <Archive className="w-64 h-64" />
-        </div>
-        
-        <div className="flex items-center justify-between mb-8 relative z-10">
-          <div>
-            <h3 className="font-bold text-core text-xl">Flow Check / GoBD Pipeline</h3>
-            <p className="text-sm text-core/50 mt-1">Lückenlose Nachverfolgung der Ausgangsrechnungen</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2 relative z-10">
-          {/* Table Header */}
-          <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-mono font-bold text-core/40 uppercase tracking-widest border-b border-shading/20">
-            <div className="col-span-2">Monat</div>
-            <div className="col-span-2">Generiert</div>
-            <div className="col-span-3">ZUGFeRD & Client</div>
-            <div className="col-span-3">Steuerberater Export</div>
-            <div className="col-span-2 text-right">Status</div>
-          </div>
-
-          {/* Table Rows */}
-          {flowCheckData.map((row, idx) => (
-            <div key={idx} className="grid grid-cols-12 gap-4 items-center px-6 py-4 bg-gray-50/50 hover:bg-gray-50 rounded-2xl transition-colors border border-transparent hover:border-shading/10 group">
-              <div className="col-span-2 font-bold text-core">{row.month}</div>
-              
-              <div className="col-span-2 font-mono font-bold text-core">{row.generated} <span className="text-core/40 text-xs">Belege</span></div>
-              
-              <div className="col-span-3 flex items-center gap-3">
-                <div className="flex-1">
-                  <div className="flex justify-between text-[10px] font-mono font-bold mb-1.5">
-                    <span className="text-core/60">ZUGFeRD</span>
-                    <span className={row.zugferd === row.generated ? "text-green-500" : "text-action"}>{Math.round((row.zugferd/row.generated)*100)}%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden"><div className={cn("h-full rounded-full", row.zugferd === row.generated ? "bg-green-500" : "bg-action")} style={{ width: `${(row.zugferd/row.generated)*100}%` }} /></div>
-                </div>
-              </div>
-
-              <div className="col-span-3 flex items-center gap-2">
-                {row.taxSent ? (
-                  <div className="flex items-center gap-2 bg-green-500/10 text-green-600 px-3 py-1.5 rounded-lg text-xs font-bold w-fit border border-green-500/20">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> ZIP übertragen
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 bg-action/10 text-action px-3 py-1.5 rounded-lg text-xs font-bold w-fit border border-action/20">
-                    <Clock className="w-3.5 h-3.5" /> Auto-Export in {row.zipDays} Tagen
-                  </div>
-                )}
-              </div>
-
-              <div className="col-span-2 flex justify-end">
-                <span className={cn(
-                  "text-[10px] font-mono font-black uppercase tracking-widest px-3 py-1.5 rounded-full border",
-                  row.status === 'completed' ? "bg-core/5 text-core/50 border-core/10" : "bg-green-500 text-white border-green-600 shadow-[0_0_15px_rgba(34,197,94,0.4)]"
-                )}>
-                  {row.status === 'completed' ? 'Archiviert' : 'Live'}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* -------------------------------------------------------------
-          ROW 3: KI INSIGHTS & GEOFENCING
-          ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-        {/* GEO MAPPING WIDGET (Munich Radius) */}
-        <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 flex flex-col">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-core/5 flex items-center justify-center">
-              <Map className="w-5 h-5 text-core" />
-            </div>
-            <div>
-              <h3 className="font-bold text-core">Kunden-Geofence</h3>
-              <p className="text-xs text-core/40">150km Radius um 80333 München</p>
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center justify-center mt-4 -ml-6">
-            <ResponsiveContainer width="110%" height={220}>
-              <RadarChart cx="50%" cy="50%" outerRadius="65%" data={geoData}>
-                <PolarGrid stroke="#f1f5f9" />
-                <PolarAngleAxis dataKey="region" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} />
-                <Radar dataKey="value" stroke="#ef8354" strokeWidth={2} fill="#ef8354" fillOpacity={0.2} />
-                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 'bold' }} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-
-        {/* AI INSIGHTS WIDGET */}
-        <motion.div variants={itemVariants} className="lg:col-span-2 bg-core text-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-10">
-            <Sparkles className="w-32 h-32" />
-          </div>
-          <div className="flex items-center gap-3 mb-8 relative z-10">
-            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/10">
-              <Sparkles className="w-6 h-6 text-action" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">Futrdesk Intelligence</h3>
-              <p className="text-white/40 text-xs font-mono">Echtzeit Analyse der Ausgangsrechnungen</p>
-            </div>
-          </div>
-          <div className="flex flex-col gap-5 relative z-10 flex-1 justify-center">
-            {aiInsights.map((insight, idx) => (
-              <div key={idx} className="flex gap-4 items-start bg-white/5 p-4 rounded-2xl border border-white/5">
-                <div className="w-2 h-2 rounded-full bg-action shrink-0 mt-2" />
-                <p className="text-white/90 leading-relaxed font-sans font-medium">{insight}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-      </div>
     </motion.div>
   );
 }
