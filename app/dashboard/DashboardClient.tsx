@@ -332,9 +332,9 @@ export default function DashboardClient({ profile }: any) {
 
         {/* Hero Logo Absolute Background Element */}
         <div 
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
+          className="absolute right-0 top-0 w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
           onClick={() => document.getElementById('logo-upload')?.click()}
-          style={{ transform: 'translate(5%, -50%)' }}
+          style={{ transform: 'translate(5%, -5%)' }}
         >
           <Image src={customLogo || "/image.png"} fill className="object-contain" alt="Company Logo" />
           <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 backdrop-blur-sm rounded-full m-8 border border-white/50 shadow-sm text-center p-4">
@@ -473,10 +473,10 @@ export default function DashboardClient({ profile }: any) {
         </div>
 
         {/* Right: ChatGPT Screenshot Mockup */}
-        <div className="flex-1 flex flex-col justify-center relative z-10 w-full rounded-2xl overflow-hidden bg-white shadow-[0_0_80px_20px_rgba(255,255,255,0.05)] border border-white/10 before:absolute before:inset-0 before:bg-gradient-to-br before:from-transparent before:to-action/5 before:pointer-events-none">
+        <div className="flex-1 flex flex-col justify-center relative z-10 w-full rounded-2xl overflow-hidden border border-white/10">
           {/* Mock Header */}
-          <div className="h-12 border-b border-gray-100 flex items-center px-4 bg-gray-50/80 backdrop-blur relative z-10">
-            <span className="text-xs font-bold text-gray-400 bg-gradient-to-r from-gray-500 to-gray-400 bg-clip-text text-transparent">{(profile?.company_name || 'FutrDesk').split(' ')[0]} Intelligence Model v4</span>
+          <div className="h-12 border-b border-white/10 flex items-center px-4 bg-white/5 backdrop-blur relative z-10">
+            <span className="text-xs font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">{(profile?.company_name || 'FutrDesk').split(' ')[0]} Intelligence Model v4</span>
           </div>
           
           <div className="p-6 flex flex-col gap-6 bg-transparent max-h-[300px] overflow-y-auto relative z-10">
@@ -486,7 +486,7 @@ export default function DashboardClient({ profile }: any) {
                 <Image src={customLogo || "/image.png"} fill className="object-contain p-1 mix-blend-multiply scale-90" alt="User" />
               </div>
               <div className="pt-1.5">
-                <p className="text-sm font-semibold text-gray-800">Generiere einen aktuellen Performance-Bericht inkl. saisonaler Effekte.</p>
+                <p className="text-sm font-semibold text-white/90">Generiere einen aktuellen Performance-Bericht inkl. saisonaler Effekte.</p>
               </div>
             </div>
 
@@ -498,7 +498,7 @@ export default function DashboardClient({ profile }: any) {
               </div>
               <div className="flex flex-col gap-3 pt-1">
                 {aiInsights.map((insight, idx) => (
-                  <p key={idx} className="text-sm text-gray-700 leading-relaxed font-medium">
+                  <p key={idx} className="text-sm text-white/70 leading-relaxed font-medium">
                     {insight}
                   </p>
                 ))}
@@ -513,8 +513,11 @@ export default function DashboardClient({ profile }: any) {
           ROW 4: HISTORICAL PIPELINE TRACKER (Verarbeitungs-Historie)
           ------------------------------------------------------------- */}
       <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-8 pointer-events-none flex items-center justify-center w-[300px] h-[300px] -mt-10 -mr-10">
-          <Image src={customLogo || "/image.png"} fill className="object-contain opacity-20 mix-blend-multiply" alt="Watermark" />
+        <div 
+          className="absolute right-0 top-0 w-80 h-80 pointer-events-none opacity-20 mix-blend-multiply" 
+          style={{ transform: 'translate(5%, -5%)' }}
+        >
+          <Image src={customLogo || "/image.png"} fill className="object-contain" alt="Watermark" />
         </div>
         
         <div className="flex flex-col gap-4 mb-8 relative z-10">
@@ -524,7 +527,6 @@ export default function DashboardClient({ profile }: any) {
             </div>
             <div>
               <h3 className="text-xl font-black text-core leading-none">Verarbeitungs-Historie</h3>
-              <p className="text-sm text-core/50 mt-1">Lückenlose Nachverfolgung des GoBD-Workflows und ZUGFeRD-Konvertierung.</p>
             </div>
           </div>
           
