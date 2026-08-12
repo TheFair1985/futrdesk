@@ -249,7 +249,11 @@ export default function DashboardClient({ profile }: any) {
           className="hidden" 
           accept="image/*" 
           onChange={(e) => { 
-            if(e.target.files?.[0]) setCustomLogo(URL.createObjectURL(e.target.files[0])) 
+            if(e.target.files?.[0]) {
+              const newUrl = URL.createObjectURL(e.target.files[0]);
+              setCustomLogo(newUrl);
+              window.dispatchEvent(new CustomEvent('logo-updated', { detail: newUrl }));
+            }
           }} 
         />
 
@@ -331,9 +335,9 @@ export default function DashboardClient({ profile }: any) {
         <div 
           className="absolute right-0 top-1/2 -translate-y-1/2 w-72 h-72 rounded-full overflow-hidden opacity-30 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
           onClick={() => document.getElementById('logo-upload')?.click()}
-          style={{ transform: 'translateX(20%)' }}
+          style={{ transform: 'translate(20%, -50%)' }}
         >
-          <Image src={customLogo || "/image.png"} fill className="object-contain p-4 group-hover:p-3 transition-all" alt="Company Logo" />
+          <Image src={customLogo || "/image.png"} fill className="object-cover scale-110" alt="Company Logo" />
         </div>
       </motion.div>
 
@@ -417,10 +421,10 @@ export default function DashboardClient({ profile }: any) {
                   </linearGradient>
                 </defs>
                 <Tooltip 
-                  formatter={(value: number) => value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                  cursor={{ fill: 'transparent' }} 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontWeight: 'bold' }}
+                  formatter={(value: number) => [value.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}), 'Umsatz']}
                   labelFormatter={(label) => `Abschnitt: ${label}`}
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }} 
-                  itemStyle={{ fontWeight: 'bold' }} 
                 />
                 <Area type="monotone" dataKey="Vorher" stroke="#2d3142" strokeOpacity={0.2} strokeWidth={2} strokeDasharray="5 5" fill="none" />
                 <Area type="monotone" dataKey="Aktuell" stroke="#ef8354" strokeWidth={4} fillOpacity={1} fill="url(#colorCurrent)" />
@@ -434,9 +438,6 @@ export default function DashboardClient({ profile }: any) {
           ROW 3: KI INSIGHTS WIDGET (Report/Analyse)
           ------------------------------------------------------------- */}
       <motion.div variants={itemVariants} className="bg-core text-white rounded-[32px] p-6 lg:p-10 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col xl:flex-row items-stretch gap-10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-          <Sparkles className="w-64 h-64 -mt-20 -mr-20" />
-        </div>
         
         {/* Left: Modern Sleek Visual */}
         <div className="w-full xl:w-1/3 relative z-10 flex flex-col justify-center items-start xl:border-r border-white/10 xl:pr-10 min-h-[250px]">
@@ -465,13 +466,13 @@ export default function DashboardClient({ profile }: any) {
         </div>
 
         {/* Right: ChatGPT Screenshot Mockup */}
-        <div className="flex-1 flex flex-col justify-center relative z-10 w-full rounded-2xl overflow-hidden shadow-[0_0_0_12px_rgba(45,49,66,1)] border border-white/5 bg-white">
+        <div className="flex-1 flex flex-col justify-center relative z-10 w-full rounded-2xl overflow-hidden bg-white shadow-[0_0_80px_20px_rgba(255,255,255,0.05)] border border-white/10 before:absolute before:inset-0 before:bg-gradient-to-br before:from-transparent before:to-action/5 before:pointer-events-none">
           {/* Mock Header */}
-          <div className="h-12 border-b border-gray-100 flex items-center px-4 bg-gray-50/50">
-            <span className="text-xs font-bold text-gray-400">FutrDesk Intelligence Model v4</span>
+          <div className="h-12 border-b border-gray-100 flex items-center px-4 bg-gray-50/80 backdrop-blur relative z-10">
+            <span className="text-xs font-bold text-gray-400 bg-gradient-to-r from-gray-500 to-gray-400 bg-clip-text text-transparent">{(profile?.company_name || 'FutrDesk').split(' ')[0]} Intelligence Model v4</span>
           </div>
           
-          <div className="p-6 flex flex-col gap-6 bg-white max-h-[300px] overflow-y-auto">
+          <div className="p-6 flex flex-col gap-6 bg-transparent max-h-[300px] overflow-y-auto relative z-10">
             {/* User Prompt Mock */}
             <div className="flex items-start gap-4">
               <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden relative shadow-sm">
@@ -482,10 +483,11 @@ export default function DashboardClient({ profile }: any) {
               </div>
             </div>
 
-            {/* AI Response Mock */}
+            {/* AI Response Mock (with glow mood) */}
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4 text-green-600" />
+              <div className="w-8 h-8 rounded-full bg-action/10 border border-action/20 flex items-center justify-center shrink-0 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-action/20 to-transparent animate-pulse" />
+                <Sparkles className="w-4 h-4 text-action relative z-10" />
               </div>
               <div className="flex flex-col gap-3 pt-1">
                 {aiInsights.map((insight, idx) => (

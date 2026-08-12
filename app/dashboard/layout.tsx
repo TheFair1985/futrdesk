@@ -5,6 +5,7 @@ import Link from "next/link";
 import { LayoutDashboard, Archive, Settings, CreditCard, LogOut } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 const navigation = [
   { name: "Übersicht", href: "/dashboard", icon: LayoutDashboard },
@@ -19,6 +20,16 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [sidebarLogo, setSidebarLogo] = useState<string>("/image.png");
+
+  useEffect(() => {
+    const handleLogoUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) setSidebarLogo(customEvent.detail);
+    };
+    window.addEventListener('logo-updated', handleLogoUpdate);
+    return () => window.removeEventListener('logo-updated', handleLogoUpdate);
+  }, []);
 
   return (
     <div className="flex h-screen bg-[#fafafa] font-sans selection:bg-action/20 selection:text-action relative z-0">
@@ -73,7 +84,7 @@ export default function DashboardLayout({
           <div className="p-4 rounded-2xl bg-gray-50 flex items-center justify-between border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-sm overflow-hidden border border-gray-200 relative">
-                <img src="/image.png" className="w-full h-full object-contain p-1.5 mix-blend-multiply" alt="User" />
+                <img src={sidebarLogo} className="w-full h-full object-contain p-1.5 mix-blend-multiply" alt="User" />
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-core">John Doe</span>
