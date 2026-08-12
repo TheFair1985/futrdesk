@@ -333,7 +333,7 @@ export default function DashboardClient({ profile }: any) {
 
         {/* Hero Logo Absolute Background Element */}
         <div 
-          className="absolute top-0 right-0 -mt-4 -mr-4 w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
+          className="absolute top-6 right-6 w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
           onClick={() => document.getElementById('logo-upload')?.click()}
         >
           <Image src={customLogo || "/image.png"} fill className="object-contain object-right-top" alt="Company Logo" />
@@ -417,6 +417,7 @@ export default function DashboardClient({ profile }: any) {
           <div className="flex-1 min-h-[260px] -ml-4 relative">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
+                <XAxis dataKey="name" hide />
                 <defs>
                   <linearGradient id="colorCurrent" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ef8354" stopOpacity={0.2}/>
@@ -514,7 +515,7 @@ export default function DashboardClient({ profile }: any) {
           ------------------------------------------------------------- */}
       <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 overflow-hidden relative">
         <div 
-          className="absolute top-0 right-0 -mt-4 -mr-4 w-80 h-80 pointer-events-none opacity-20 mix-blend-multiply" 
+          className="absolute top-6 right-6 w-80 h-80 pointer-events-none opacity-20 mix-blend-multiply" 
         >
           <Image src={customLogo || "/image.png"} fill className="object-contain object-right-top" alt="Watermark" />
         </div>
