@@ -213,7 +213,7 @@ export default function DashboardClient({ profile }: any) {
       data.push({ name: '1', Aktuell: currentBilled * 0.45, Vorher: previousBilled * 0.25 });
       data.push({ name: '2', Aktuell: currentBilled * 0.45, Vorher: previousBilled * 0.25 });
       data.push({ name: '3', Aktuell: currentBilled * 0.10, Vorher: previousBilled * 0.25 });
-      data.push({ name: '4', Aktuell: 0, Vorher: previousBilled * 0.25 });
+      data.push({ name: '4', Aktuell: null, Vorher: previousBilled * 0.25 });
     }
     return data;
   }, [timeframe, currentPeriodInvoices, previousPeriodInvoices, currentBilled, previousBilled]);
@@ -241,7 +241,7 @@ export default function DashboardClient({ profile }: any) {
       {/* -------------------------------------------------------------
           HEADER & SUPER-METRICS (The Cockpit)
           ------------------------------------------------------------- */}
-      <motion.div variants={itemVariants} className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 bg-white/90 backdrop-blur-sm p-8 rounded-[32px] shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 relative overflow-hidden z-10">
+      <motion.div variants={itemVariants} className="flex flex-col xl:flex-row xl:items-stretch justify-between gap-8 bg-white/90 backdrop-blur-sm p-8 rounded-[32px] shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 relative overflow-hidden z-10">
         
         {/* Hidden File Input for Logo */}
         <input 
@@ -308,11 +308,11 @@ export default function DashboardClient({ profile }: any) {
         </div>
 
         {/* RIGHT SIDE: COMPANY & TIME TOGGLE */}
-        <div className="flex flex-col items-center justify-between shrink-0 relative z-10 min-h-full">
+        <div className="flex flex-col items-center justify-between shrink-0 relative z-10 self-stretch min-h-full">
           
           {/* Centered Logo above Toggle */}
           <div 
-            className="relative flex-1 w-56 min-h-[120px] mb-4 mt-2 opacity-50 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
+            className="relative w-56 h-56 my-auto opacity-60 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
             onClick={() => document.getElementById('logo-upload')?.click()}
           >
             <Image src={customLogo || "/image.png"} fill className="object-contain object-center" alt="Company Logo" />
