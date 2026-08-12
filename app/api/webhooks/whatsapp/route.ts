@@ -4,6 +4,7 @@ import { sendWhatsAppText, sendWhatsAppDocument } from '../../../../lib/whatsapp
 import { getMediaAndUploadToSupabase } from '../../../../lib/whatsapp/getMedia';
 import { extractInvoice } from '../../../../lib/ai/extractInvoice';
 import { generateZugferdPdf } from '../../../../lib/zugferd/generatePdf';
+import { checkAndConsumeInvoice } from '../../../../lib/billing/usage';
 
 // Supabase Admin Client for bypassing RLS during webhook execution
 const getSupabaseAdmin = () => createClient(
@@ -120,6 +121,11 @@ export async function POST(request: Request) {
             .single();
 
           if (channel && channel.user_id) {
+            const isAllowed = await checkAndConsumeInvoice(channel.user_id);
+            if (!isAllowed) {
+              return new NextResponse('EVENT_RECEIVED', { status: 200 });
+            }
+
             // Pipeline-Trigger: Media Download & Storage Upload
             const filePath = await getMediaAndUploadToSupabase(mediaId, mimeType, channel.user_id);
 

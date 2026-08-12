@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { revalidatePath } from "next/cache"
 import { CreditCard, HardDrive, Zap, Check, ArrowRight } from "lucide-react"
+import { generateCheckoutUrl } from "./actions"
 
 export default async function BillingPage() {
   const cookieStore = await cookies();
@@ -35,38 +35,6 @@ export default async function BillingPage() {
   if (profile.tier === 'BUSINESS') totalMB = 5000;
   
   const percentage = Math.min(100, Math.max(0, (Number(usedMB) / totalMB) * 100));
-
-  async function upgradePlan(formData: FormData) {
-    "use server"
-    
-    const newTier = formData.get('tier') as string;
-    
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-             try {
-               cookiesToSet.forEach(({ name, value, options }) =>
-                  cookieStore.set(name, value, options)
-               )
-             } catch(err) {}
-          }
-        }
-      }
-    );
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && newTier) {
-      // In a real app, this would trigger a Stripe checkout flow. 
-      // For this MVP, we simulate an immediate upgrade in the database.
-      await supabase.from('users').update({ tier: newTier }).eq('id', user.id);
-      revalidatePath('/dashboard/billing');
-    }
-  }
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col gap-10 pb-20">
@@ -150,7 +118,7 @@ export default async function BillingPage() {
               <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> 1 GB Speicher (ZIP Export)</li>
               <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> Llama-3 Extraktion</li>
             </ul>
-            <form action={upgradePlan}>
+            <form action={generateCheckoutUrl}>
               <input type="hidden" name="tier" value="STARTER" />
               <button disabled={profile.tier === 'STARTER'} className={`w-full py-3 rounded-xl font-bold transition-colors ${profile.tier === 'STARTER' ? 'bg-gray-100 text-core/40 cursor-not-allowed' : 'bg-gray-100 text-core hover:bg-gray-200 border border-[#bfc0c0]'}`}>
                 {profile.tier === 'STARTER' ? 'Aktuell' : 'Downgrade auf Starter'}
@@ -181,7 +149,7 @@ export default async function BillingPage() {
               <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-action shrink-0 mt-0.5" /> 3 GB Speicher (GoBD 10J)</li>
               <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-action shrink-0 mt-0.5" /> Automatischer Export</li>
             </ul>
-            <form action={upgradePlan}>
+            <form action={generateCheckoutUrl}>
               <input type="hidden" name="tier" value="PRO" />
               <button disabled={profile.tier === 'PRO'} className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${profile.tier === 'PRO' ? 'bg-action text-white cursor-not-allowed opacity-90' : 'bg-action hover:bg-action/90 text-white shadow-md'}`}>
                 {profile.tier === 'PRO' ? 'Aktuell' : 'Plan wechseln'}
@@ -208,7 +176,7 @@ export default async function BillingPage() {
               <li className="flex items-start gap-2 text-sm text-white/80"><Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" /> Eigene Inbound Domain</li>
               <li className="flex items-start gap-2 text-sm text-white/80"><Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" /> API Zugriff</li>
             </ul>
-            <form action={upgradePlan}>
+            <form action={generateCheckoutUrl}>
               <input type="hidden" name="tier" value="BUSINESS" />
               <button disabled={profile.tier === 'BUSINESS'} className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${profile.tier === 'BUSINESS' ? 'bg-white/10 text-white cursor-not-allowed' : 'bg-white text-core hover:bg-gray-100 shadow-md'}`}>
                 {profile.tier === 'BUSINESS' ? 'Aktuell' : 'Enterprise anfragen'}

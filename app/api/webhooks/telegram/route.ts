@@ -4,6 +4,7 @@ import { sendTelegramText, sendTelegramDocument } from '../../../../lib/telegram
 import { getTelegramMediaAndUpload } from '../../../../lib/telegram/getMedia';
 import { extractInvoice } from '../../../../lib/ai/extractInvoice';
 import { generateZugferdPdf } from '../../../../lib/zugferd/generatePdf';
+import { checkAndConsumeInvoice } from '../../../../lib/billing/usage';
 
 const getSupabaseAdmin = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -55,6 +56,11 @@ export async function POST(request: Request) {
         .single();
         
       if (channel && channel.user_id) {
+        const isAllowed = await checkAndConsumeInvoice(channel.user_id);
+        if (!isAllowed) {
+          return new NextResponse('OK', { status: 200 });
+        }
+
         const mediaResult = await getTelegramMediaAndUpload(fileId, channel.user_id);
         if (mediaResult) {
           const { data: insertData } = await (supabaseAdmin.from('invoices') as any).insert({

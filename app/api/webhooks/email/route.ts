@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { extractInvoice } from '../../../../lib/ai/extractInvoice';
 import { generateZugferdPdf } from '../../../../lib/zugferd/generatePdf';
 import { sendEmailWithAttachment } from '../../../../lib/email/sendMessage';
+import { checkAndConsumeInvoice } from '../../../../lib/billing/usage';
 
 const getSupabaseAdmin = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -26,6 +27,11 @@ export async function POST(request: Request) {
     const { data: channel } = await (supabaseAdmin.from('channels') as any).select('user_id').eq('email_address', fromEmail).single();
     
     if (channel && channel.user_id) {
+      const isAllowed = await checkAndConsumeInvoice(channel.user_id);
+      if (!isAllowed) {
+        return new NextResponse('OK', { status: 200 });
+      }
+
       // Process first attachment
       const attachment = attachments[0];
       const buffer = Buffer.from(attachment.Content, 'base64');

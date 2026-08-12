@@ -45,3 +45,37 @@ export async function sendEmailWithAttachment(to: string, subject: string, text:
     console.error('Error sending email:', err);
   }
 }
+
+export async function sendEmailText(to: string, subject: string, text: string) {
+  // Using Resend API as an example for the mailer
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error('RESEND_API_KEY is not defined.');
+    return;
+  }
+  
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'alerts@futrdesk.com', // MUST be verified in Resend
+        to: to,
+        subject: subject,
+        text: text
+      })
+    });
+    
+    if (!response.ok) {
+      const err = await response.json();
+      console.error('Failed to send text email:', err);
+    } else {
+      console.log(`Text Email sent successfully to ${to}`);
+    }
+  } catch (err) {
+    console.error('Error sending text email:', err);
+  }
+}
