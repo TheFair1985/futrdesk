@@ -308,11 +308,11 @@ export default function DashboardClient({ profile }: any) {
         </div>
 
         {/* RIGHT SIDE: COMPANY & TIME TOGGLE */}
-        <div className="flex flex-col items-center justify-between shrink-0 relative z-10 self-stretch min-h-full">
+        <div className="flex flex-col items-center shrink-0 relative z-10 self-stretch min-h-full w-48 xl:w-56">
           
           {/* Centered Logo above Toggle */}
           <div 
-            className="relative w-56 h-56 my-auto opacity-60 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
+            className="relative flex-1 w-full my-4 opacity-60 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
             onClick={() => document.getElementById('logo-upload')?.click()}
           >
             <Image src={customLogo || "/image.png"} fill className="object-contain object-center" alt="Company Logo" />
