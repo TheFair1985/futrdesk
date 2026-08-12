@@ -40,3 +40,47 @@ export async function sendWhatsAppText(to: string, text: string) {
     // We log the error but don't throw to prevent crashing the webhook execution
   }
 }
+
+/**
+ * Utility to send WhatsApp document messages via Meta Graph API
+ */
+export async function sendWhatsAppDocument(to: string, documentUrl: string, filename: string, caption?: string) {
+  try {
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+
+    if (!phoneNumberId || !accessToken) {
+      console.error('WhatsApp API credentials are missing in environment variables.');
+      return;
+    }
+
+    const url = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: to,
+        type: 'document',
+        document: {
+          link: documentUrl,
+          filename: filename,
+          caption: caption
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Failed to send WhatsApp document:', JSON.stringify(errorData));
+    } else {
+      console.log(`WhatsApp document sent successfully to ${to}`);
+    }
+  } catch (error) {
+    console.error('Error in sendWhatsAppDocument utility:', error);
+  }
+}
