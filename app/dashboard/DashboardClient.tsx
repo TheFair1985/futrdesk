@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from "framer-motion";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
-import { TrendingUp, Users, CheckCircle2, Smartphone, Send, Mail, Map, Zap, ArrowUpRight, ArrowDownRight, Clock, Archive, Trophy, Sparkles, Activity, Info, FileText } from "lucide-react";
+import { TrendingUp, Users, CheckCircle2, Smartphone, Send, Mail, Map, Zap, ArrowUpRight, ArrowDownRight, Clock, Archive, Trophy, Sparkles, Activity, Info, FileText, Bot, AlertTriangle } from "lucide-react";
 import { cn } from "../../lib/utils";
 import Image from "next/image";
 
@@ -217,10 +217,10 @@ export default function DashboardClient({ profile }: any) {
   }, [timeframe, currentPeriodInvoices, previousPeriodInvoices, currentBilled, previousBilled]);
 
   const flowCheckData = [
-    { month: `August ${String(selectedYear).slice(2)}`, generated: 142, zugferd: 142, clientSent: 140, taxSent: false, zipDays: 19, status: 'active', desc: 'ZUGFeRD Konvertierung abgeschlossen. Wartet auf Auto-Export an Steuerberater.' },
-    { month: `Juli ${String(selectedYear).slice(2)}`, generated: 450, zugferd: 450, clientSent: 449, taxSent: true, zipDays: 0, status: 'completed', desc: 'Sammel-Export erfolgreich an DATEV übermittelt. Zyklus GoBD-konform geschlossen.' },
+    { month: `August ${String(selectedYear).slice(2)}`, generated: 142, zugferd: 139, clientSent: 139, taxSent: false, zipDays: 19, status: 'attention', desc: '3 Belege fehlerhaft. Stammdaten unvollständig (Steuernummer fehlt). Bitte manuell korrigieren.' },
+    { month: `Juli ${String(selectedYear).slice(2)}`, generated: 450, zugferd: 450, clientSent: 450, taxSent: true, zipDays: 0, status: 'completed', desc: 'Sammel-Export erfolgreich an DATEV übermittelt. Zyklus GoBD-konform geschlossen.' },
     { month: `Juni ${String(selectedYear).slice(2)}`, generated: 480, zugferd: 480, clientSent: 480, taxSent: true, zipDays: 0, status: 'completed', desc: 'Sammel-Export erfolgreich an DATEV übermittelt. Zyklus GoBD-konform geschlossen.' },
-    { month: `Mai ${String(selectedYear).slice(2)}`, generated: 512, zugferd: 510, clientSent: 510, taxSent: true, zipDays: 0, status: 'completed', desc: 'Sammel-Export erfolgreich an DATEV übermittelt. Zyklus GoBD-konform geschlossen.' },
+    { month: `Mai ${String(selectedYear).slice(2)}`, generated: 512, zugferd: 512, clientSent: 512, taxSent: true, zipDays: 0, status: 'completed', desc: 'Sammel-Export erfolgreich an DATEV übermittelt. Zyklus GoBD-konform geschlossen.' },
   ];
 
   const generateAiInsights = () => {
@@ -250,6 +250,14 @@ export default function DashboardClient({ profile }: any) {
       <motion.div variants={itemVariants} className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 bg-white p-8 rounded-[32px] shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10">
         
         <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1 mb-2">
+            <div className="flex items-center gap-3">
+              {profile?.logo_url && (
+                <Image src={profile.logo_url} width={32} height={32} alt="Logo" className="rounded-lg object-contain" />
+              )}
+              <h2 className="text-xl font-bold text-core tracking-tight">{profile?.company_name || 'Musterfirma GmbH'}</h2>
+            </div>
+          </div>
           <div>
             <div className="flex items-center gap-4 mb-2">
               <span className="text-core/50 font-bold text-sm tracking-widest uppercase">Fakturierter Ausgangsumsatz</span>
@@ -416,30 +424,15 @@ export default function DashboardClient({ profile }: any) {
       {/* -------------------------------------------------------------
           ROW 3: KI INSIGHTS WIDGET
           ------------------------------------------------------------- */}
-      <motion.div variants={itemVariants} className="bg-core text-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+      <motion.div variants={itemVariants} className="bg-core text-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col md:flex-row items-center gap-10 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-6 opacity-10">
           <Sparkles className="w-64 h-64 -mt-20 -mr-20" />
         </div>
         
-        <div className="flex flex-col items-center justify-center gap-2 relative z-10 w-full md:w-1/4">
-          <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-2 shadow-2xl overflow-hidden">
-             <Image src="/futrdesk.png" alt="Futrdesk Logo" width={50} height={50} className="opacity-90 grayscale contrast-150" />
-          </div>
-        </div>
-        
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-          {aiInsights.slice(0,2).map((insight, idx) => (
-            <div key={idx} className="flex gap-4 items-start bg-white/5 p-6 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
-              <div className="w-2.5 h-2.5 rounded-full bg-action shrink-0 mt-1.5 shadow-[0_0_12px_rgba(239,131,84,0.8)]" />
-              <p className="text-white/90 leading-relaxed font-sans font-medium text-[15px]">{insight}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Impactful Visual 3rd Box */}
-        <div className="w-full md:w-1/4 h-full relative z-10 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center items-center">
+        {/* Left: Visual Gauge */}
+        <div className="w-full md:w-1/4 h-full relative z-10 flex flex-col justify-center items-center md:border-r border-white/10 md:pr-10">
            <span className="text-white/50 text-xs font-bold uppercase tracking-widest mb-4">GoBD ZUGFeRD Quote</span>
-           <div className="h-24 w-full">
+           <div className="h-28 w-full max-w-[160px]">
              <ResponsiveContainer width="100%" height="100%">
                 <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" barSize={10} data={[{name: 'Quote', value: 99.8, fill: '#22c55e'}]}>
                   <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
@@ -450,6 +443,20 @@ export default function DashboardClient({ profile }: any) {
                 </RadialBarChart>
              </ResponsiveContainer>
            </div>
+        </div>
+
+        {/* Right: LLM Chat Bubbles */}
+        <div className="flex-1 flex flex-col gap-5 relative z-10 w-full">
+          {aiInsights.slice(0,2).map((insight, idx) => (
+            <div key={idx} className="flex items-end gap-3 w-full max-w-3xl">
+              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                <Image src="/futrdesk.png" alt="Futrdesk Logo" width={20} height={20} className="opacity-90 grayscale contrast-150" />
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-none p-4 text-[14px] leading-relaxed text-white/90 font-medium">
+                {insight}
+              </div>
+            </div>
+          ))}
         </div>
       </motion.div>
 
@@ -468,9 +475,10 @@ export default function DashboardClient({ profile }: any) {
             <p className="text-sm text-core/50 mt-1">Lückenlose Nachverfolgung des GoBD-Workflows und ZUGFeRD-Konvertierung.</p>
           </div>
           
-          <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl flex gap-6 text-xs text-core/70 font-medium w-fit">
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500" /> <span className="font-bold text-core">Archiviert:</span> Alle GoBD-Schritte inkl. StB-Export abgeschlossen.</div>
-            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-action" /> <span className="font-bold text-core">In Bearbeitung:</span> ZUGFeRD erstellt, wartet auf Auto-Export. Keine Aktion nötig.</div>
+          <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl flex flex-wrap gap-6 text-xs text-core/70 font-medium w-fit">
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500" /> <span className="font-bold text-core">Archiviert:</span> Alle GoBD-Schritte abgeschlossen.</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-action" /> <span className="font-bold text-core">In Bearbeitung:</span> ZUGFeRD bereit für Export.</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500" /> <span className="font-bold text-core">Aktion erforderlich:</span> Belege fehlerhaft (siehe Details).</div>
           </div>
         </div>
 
@@ -499,15 +507,17 @@ export default function DashboardClient({ profile }: any) {
               </div>
 
               <div className="col-span-6 flex items-center justify-end gap-6">
-                <span className="text-xs text-core/60 text-right leading-tight max-w-[300px]">
+                <span className={cn("text-xs text-right leading-tight max-w-[300px]", row.status === 'attention' ? "text-red-500 font-bold" : "text-core/60")}>
                   {row.desc}
                 </span>
 
                 <span className={cn(
-                  "text-[10px] font-mono font-black uppercase tracking-widest px-4 py-2 rounded-lg border min-w-[120px] text-center",
-                  row.status === 'completed' ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-action/10 text-action border-action/20"
+                  "text-[10px] font-mono font-black uppercase tracking-widest px-4 py-2 rounded-lg border min-w-[140px] text-center shrink-0",
+                  row.status === 'completed' ? "bg-green-500/10 text-green-600 border-green-500/20" : 
+                  row.status === 'attention' ? "bg-red-500/10 text-red-600 border-red-500/20" : 
+                  "bg-action/10 text-action border-action/20"
                 )}>
-                  {row.status === 'completed' ? 'Archiviert' : 'In Bearbeitung'}
+                  {row.status === 'completed' ? 'Archiviert' : row.status === 'attention' ? 'Aktion nötig' : 'In Bearbeitung'}
                 </span>
               </div>
             </div>
