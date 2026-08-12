@@ -215,7 +215,6 @@ export default function DashboardClient({ profile }: any) {
     }
     return data;
   }, [timeframe, currentPeriodInvoices, previousPeriodInvoices, currentBilled, previousBilled]);
-
   const flowCheckData = [
     { month: `August ${String(selectedYear).slice(2)}`, generated: 142, zugferd: 139, clientSent: 139, taxSent: false, zipDays: 19, status: 'attention', desc: '3 Belege fehlerhaft. Stammdaten unvollständig (Steuernummer fehlt). Bitte manuell korrigieren.' },
     { month: `Juli ${String(selectedYear).slice(2)}`, generated: 450, zugferd: 450, clientSent: 450, taxSent: true, zipDays: 0, status: 'completed', desc: 'Sammel-Export erfolgreich an DATEV übermittelt. Zyklus GoBD-konform geschlossen.' },
@@ -225,14 +224,32 @@ export default function DashboardClient({ profile }: any) {
 
   const generateAiInsights = () => {
     const insights = [];
-    if (timeframe === 'jahr') {
-      insights.push(`Saisonales Muster erkannt: Januar, Februar und August zeigen konsistente Umsatzdellen (-60% vs. Jahresdurchschnitt).`);
-    } else if (timeframe === 'monat' && now.getMonth() === 7) {
-      insights.push(`Der August-Umsatz ist erfahrungsgemäß urlaubsbedingt schwach. Prognostizierter Endspurt sichert stabile Marge.`);
-    }
+    
+    // Actionable Insight 1: Fix needed
+    insights.push({
+      type: 'alert',
+      text: '3 Ausgangsrechnungen (August) können nicht verarbeitet werden, da die Umsatzsteuer-ID des Empfängers fehlt.',
+      actionText: 'Jetzt beheben',
+      link: '/dashboard/archive?filter=needs_fix'
+    });
 
-    if (leaderboard.length > 0 && leaderboard[0].growth > 10) {
-      insights.push(`Der Kunde '${leaderboard[0].name}' wächst massiv (+${leaderboard[0].growth.toFixed(1)}%) und fordert ${leaderboard[0].share.toFixed(1)}% Kapazität.`);
+    // Actionable Insight 2: Customer drop
+    if (leaderboard.length > 0 && leaderboard[leaderboard.length - 1].growth < -20) {
+      const lostCustomer = leaderboard[leaderboard.length - 1];
+      insights.push({
+        type: 'warning',
+        text: `Kunde '${lostCustomer.name}' hat einen starken Umsatzrückgang (${lostCustomer.growth.toFixed(1)}%).`,
+        actionText: 'Kundenakte ansehen',
+        link: '#'
+      });
+    } else {
+      // Default Insight if no drop
+      insights.push({
+        type: 'success',
+        text: `Saisonales Muster: Der zu erwartende Einbruch im August wurde durch den Neukunden-Zuwachs in 80333 abgefangen.`,
+        actionText: 'Detail-Analyse öffnen',
+        link: '#'
+      });
     }
 
     return insights;
@@ -242,22 +259,16 @@ export default function DashboardClient({ profile }: any) {
   if (!mounted) return <div className="min-h-screen bg-gray-50 flex items-center justify-center font-bold text-core/20">Inititalisiere Dashboard Engine...</div>;
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show" className="flex flex-col gap-10">
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="flex flex-col gap-10 relative">
+      {/* Soft Grid Background */}
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none rounded-[32px]" />
       
       {/* -------------------------------------------------------------
           HEADER & SUPER-METRICS (The Cockpit)
           ------------------------------------------------------------- */}
-      <motion.div variants={itemVariants} className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 bg-white p-8 rounded-[32px] shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10">
+      <motion.div variants={itemVariants} className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 bg-white/90 backdrop-blur-sm p-8 rounded-[32px] shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10">
         
         <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-1 mb-2">
-            <div className="flex items-center gap-3">
-              {profile?.logo_url && (
-                <Image src={profile.logo_url} width={32} height={32} alt="Logo" className="rounded-lg object-contain" />
-              )}
-              <h2 className="text-xl font-bold text-core tracking-tight">{profile?.company_name || 'Musterfirma GmbH'}</h2>
-            </div>
-          </div>
           <div>
             <div className="flex items-center gap-4 mb-2">
               <span className="text-core/50 font-bold text-sm tracking-widest uppercase">Fakturierter Ausgangsumsatz</span>
@@ -305,25 +316,35 @@ export default function DashboardClient({ profile }: any) {
           </div>
         </div>
 
-        {/* TIME TOGGLE */}
-        <div className="flex flex-col items-end gap-2 shrink-0">
-          <span className="text-xs font-bold text-core/40 uppercase tracking-widest mr-2">Zeitraum Filter</span>
-          <div className="flex items-center bg-gray-50/80 p-1.5 rounded-2xl shadow-inner border border-shading/10">
-            {(['monat', 'quartal', 'jahr'] as Timeframe[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTimeframe(t)}
-                className={cn(
-                  "relative px-8 py-3 text-sm font-black uppercase tracking-widest rounded-xl transition-colors z-10",
-                  timeframe === t ? "text-core" : "text-core/40 hover:text-core/80"
-                )}
-              >
-                {timeframe === t && (
-                  <motion.div layoutId="timeframe-bubble" className="absolute inset-0 bg-white rounded-xl shadow-[0_2px_10px_rgb(0,0,0,0.06)] border border-shading/5 -z-10" transition={{ type: "spring", stiffness: 400, damping: 30 }} />
-                )}
-                {t === 'monat' ? 'Monat' : t === 'quartal' ? 'Quartal' : 'Jahr'}
-              </button>
-            ))}
+        {/* RIGHT SIDE: COMPANY & TIME TOGGLE */}
+        <div className="flex flex-col items-end gap-6 shrink-0">
+          
+          <div className="flex flex-col items-end gap-2">
+            <div className="w-10 h-10 bg-gray-50 rounded-xl border border-shading/10 flex items-center justify-center p-2 shadow-sm">
+              <Image src="/futrdesk.png" width={24} height={24} alt="Company Logo Mockup" className="opacity-80 contrast-125" />
+            </div>
+            <h2 className="text-lg font-black text-core tracking-tight">{profile?.company_name || 'Acme Corp. GmbH'}</h2>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            <span className="text-xs font-bold text-core/40 uppercase tracking-widest mr-2">Zeitraum Filter</span>
+            <div className="flex items-center bg-gray-50/80 p-1.5 rounded-2xl shadow-inner border border-shading/10">
+              {(['monat', 'quartal', 'jahr'] as Timeframe[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTimeframe(t)}
+                  className={cn(
+                    "relative px-8 py-3 text-sm font-black uppercase tracking-widest rounded-xl transition-colors z-10",
+                    timeframe === t ? "text-core" : "text-core/40 hover:text-core/80"
+                  )}
+                >
+                  {timeframe === t && (
+                    <motion.div layoutId="timeframe-bubble" className="absolute inset-0 bg-white rounded-xl shadow-[0_2px_10px_rgb(0,0,0,0.06)] border border-shading/5 -z-10" transition={{ type: "spring", stiffness: 400, damping: 30 }} />
+                  )}
+                  {t === 'monat' ? 'Monat' : t === 'quartal' ? 'Quartal' : 'Jahr'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </motion.div>
@@ -422,38 +443,39 @@ export default function DashboardClient({ profile }: any) {
       </div>
 
       {/* -------------------------------------------------------------
-          ROW 3: KI INSIGHTS WIDGET
+          ROW 3: KI INSIGHTS WIDGET (Actionable Empfehlungen)
           ------------------------------------------------------------- */}
-      <motion.div variants={itemVariants} className="bg-core text-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col md:flex-row items-center gap-10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-6 opacity-10">
+      <motion.div variants={itemVariants} className="bg-core text-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col md:flex-row items-stretch gap-10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
           <Sparkles className="w-64 h-64 -mt-20 -mr-20" />
         </div>
         
-        {/* Left: Visual Gauge */}
-        <div className="w-full md:w-1/4 h-full relative z-10 flex flex-col justify-center items-center md:border-r border-white/10 md:pr-10">
-           <span className="text-white/50 text-xs font-bold uppercase tracking-widest mb-4">GoBD ZUGFeRD Quote</span>
-           <div className="h-28 w-full max-w-[160px]">
-             <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" barSize={10} data={[{name: 'Quote', value: 99.8, fill: '#22c55e'}]}>
-                  <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
-                  <RadialBar background dataKey="value" cornerRadius={10} />
-                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-white font-black text-2xl">
-                    99.8%
-                  </text>
-                </RadialBarChart>
-             </ResponsiveContainer>
+        {/* Left: Summary Metric */}
+        <div className="w-full md:w-1/4 relative z-10 flex flex-col justify-center items-start md:border-r border-white/10 md:pr-10">
+           <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6 border border-white/10">
+             <Bot className="w-6 h-6 text-action" />
            </div>
+           <h3 className="text-3xl font-black mb-2">Empfehlungen</h3>
+           <p className="text-white/50 text-sm leading-relaxed">
+             Die KI hat {aiInsights.length} actionable Insights in deinen Daten gefunden, die deine Aufmerksamkeit erfordern.
+           </p>
         </div>
 
-        {/* Right: LLM Chat Bubbles */}
-        <div className="flex-1 flex flex-col gap-5 relative z-10 w-full">
-          {aiInsights.slice(0,2).map((insight, idx) => (
-            <div key={idx} className="flex items-end gap-3 w-full max-w-3xl">
-              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                <Image src="/futrdesk.png" alt="Futrdesk Logo" width={20} height={20} className="opacity-90 grayscale contrast-150" />
+        {/* Right: LLM Chat Bubbles (Actionable) */}
+        <div className="flex-1 flex flex-col justify-center gap-6 relative z-10 w-full">
+          {aiInsights.map((insight, idx) => (
+            <div key={idx} className="flex items-start gap-4 w-full max-w-3xl">
+              <div className="w-10 h-10 rounded-full bg-white/10 border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-inner mt-1">
+                <Image src="/futrdesk.png" alt="Futrdesk Logo" width={24} height={24} className="opacity-90 grayscale contrast-150" />
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-none p-4 text-[14px] leading-relaxed text-white/90 font-medium">
-                {insight}
+              <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-5 text-[14px] leading-relaxed text-white/90 font-medium flex flex-col gap-4">
+                <span>{insight.text}</span>
+                <a 
+                  href={insight.link} 
+                  className="flex items-center gap-2 w-fit bg-action text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-action/90 transition-colors shadow-sm"
+                >
+                  {insight.actionText} <ArrowUpRight className="w-3.5 h-3.5" />
+                </a>
               </div>
             </div>
           ))}
@@ -507,18 +529,22 @@ export default function DashboardClient({ profile }: any) {
               </div>
 
               <div className="col-span-6 flex items-center justify-end gap-6">
-                <span className={cn("text-xs text-right leading-tight max-w-[300px]", row.status === 'attention' ? "text-red-500 font-bold" : "text-core/60")}>
+                <span className={cn("text-xs text-right leading-tight max-w-[250px]", row.status === 'attention' ? "text-red-500 font-bold" : "text-core/60")}>
                   {row.desc}
                 </span>
 
-                <span className={cn(
-                  "text-[10px] font-mono font-black uppercase tracking-widest px-4 py-2 rounded-lg border min-w-[140px] text-center shrink-0",
-                  row.status === 'completed' ? "bg-green-500/10 text-green-600 border-green-500/20" : 
-                  row.status === 'attention' ? "bg-red-500/10 text-red-600 border-red-500/20" : 
-                  "bg-action/10 text-action border-action/20"
-                )}>
-                  {row.status === 'completed' ? 'Archiviert' : row.status === 'attention' ? 'Aktion nötig' : 'In Bearbeitung'}
-                </span>
+                {row.status === 'attention' ? (
+                  <a href="/dashboard/archive?filter=needs_fix" className="flex items-center justify-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-widest px-4 py-2 rounded-lg border min-w-[140px] text-center shrink-0 bg-red-500 text-white border-red-600 hover:bg-red-600 transition-colors shadow-[0_4px_14px_rgba(239,68,68,0.3)]">
+                    Jetzt beheben <ArrowUpRight className="w-3 h-3" />
+                  </a>
+                ) : (
+                  <span className={cn(
+                    "text-[10px] font-mono font-black uppercase tracking-widest px-4 py-2 rounded-lg border min-w-[140px] text-center shrink-0",
+                    row.status === 'completed' ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-action/10 text-action border-action/20"
+                  )}>
+                    {row.status === 'completed' ? 'Archiviert' : 'In Bearbeitung'}
+                  </span>
+                )}
               </div>
             </div>
           ))}
