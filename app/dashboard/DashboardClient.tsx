@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Sector } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import { TrendingUp, Users, CheckCircle2, Smartphone, Send, Mail, Map, Zap, ArrowUpRight, ArrowDownRight, Clock, Archive, Trophy, Sparkles, Activity } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -18,49 +18,214 @@ const itemVariants: any = {
 
 type Timeframe = 'monat' | 'quartal' | 'jahr';
 
-export default function DashboardClient({ profile, channels, invoices }: any) {
-  const [timeframe, setTimeframe] = useState<Timeframe>('monat');
+// --- MOCK DATA GENERATOR (2025 & 2026 Seasonality + Munich Geofence) ---
+const generateMockInvoices = () => {
+  const invoices = [];
+  const start = new Date(2025, 0, 1);
+  const end = new Date(2026, 7, 12); // August 12, 2026
 
-  // 1. ADVANCED MOCK DATA OVERRIDES (For the "Championship" Density)
-  // We use actual invoices for basic counts, but heavily mock the complex historical stuff to show the ultimate UI.
-  
-  const totalBilled = 124500.50; // Mocked High Revenue for visual impact
-  const previousPeriodBilled = 108200.00;
-  const growth = ((totalBilled - previousPeriodBilled) / previousPeriodBilled) * 100;
-  
-  const forecast = totalBilled * 1.18; // 18% projected growth
-  
-  // Leaderboard Mock Data (The "Race")
-  const leaderboard = [
-    { rank: 1, name: "Amazon AWS", amount: 45000, share: 36, growth: 12.5, status: 'up' },
-    { rank: 2, name: "Shell Fleet", amount: 32000, share: 25, growth: -4.2, status: 'down' },
-    { rank: 3, name: "Adobe Systems", amount: 18500, share: 15, growth: 22.1, status: 'up' },
-    { rank: 4, name: "Salesforce", amount: 12000, share: 10, growth: 5.0, status: 'up' },
+  const customers = [
+    { name: "Amazon AWS", share: 0.35 },
+    { name: "Shell Fleet", share: 0.25 },
+    { name: "Adobe Systems", share: 0.15 },
+    { name: "Salesforce", share: 0.10 },
+    { name: "Telekom", share: 0.10 },
+    { name: "Microsoft", share: 0.05 }
   ];
 
-  // AI Insights
-  const aiInsights = [
-    "Das Volumen bei 'Adobe Systems' ist um 22% gestiegen. Ein Rahmenvertrag könnte Kosten senken.",
-    "Die ZUGFeRD-Konvertierungsrate liegt stabil bei 99.8%. Perfekter Flow.",
-    "Prognose: Der August wird das stärkste Quartal seit Aufzeichnung beenden (+18% über Ziel)."
+  // Munich & 150km radius PLZs
+  const regions = [
+    { name: "München Zentrum (80333)", zip: "80333", prob: 0.4 },
+    { name: "Augsburg (86150)", zip: "86150", prob: 0.2 },
+    { name: "Ingolstadt (85049)", zip: "85049", prob: 0.15 },
+    { name: "Rosenheim (83022)", zip: "83022", prob: 0.15 },
+    { name: "Garmisch (82467)", zip: "82467", prob: 0.1 },
   ];
 
-  // Flow Check Pipeline (Historical Tracker)
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const month = d.getMonth(); // 0 = Jan, 1 = Feb, 7 = Aug
+    const isBadMonth = month === 0 || month === 1 || month === 7;
+    
+    // Base daily probability of an invoice
+    const dailyInvoices = isBadMonth ? Math.floor(Math.random() * 2) + 1 : Math.floor(Math.random() * 5) + 3;
+
+    for (let i = 0; i < dailyInvoices; i++) {
+      const randCustomer = Math.random();
+      let cumulative = 0;
+      let selectedCustomer = customers[0].name;
+      for (const c of customers) {
+        cumulative += c.share;
+        if (randCustomer <= cumulative) {
+          selectedCustomer = c.name;
+          break;
+        }
+      }
+
+      const randRegion = Math.random();
+      let cumReg = 0;
+      let selectedRegion = regions[0];
+      for (const r of regions) {
+        cumReg += r.prob;
+        if (randRegion <= cumReg) {
+          selectedRegion = r;
+          break;
+        }
+      }
+
+      // Random amount between 150 and 900
+      const amount = Math.floor(Math.random() * 750) + 150;
+
+      invoices.push({
+        id: `INV-${d.getTime()}-${i}`,
+        created_at: new Date(d).toISOString(),
+        vendor_name: selectedCustomer,
+        gross_amount: amount,
+        status: Math.random() > 0.05 ? 'completed' : 'needs_fix',
+        zip_code: selectedRegion.zip,
+        region_name: selectedRegion.name
+      });
+    }
+  }
+  return invoices;
+};
+
+const cachedMockInvoices = generateMockInvoices();
+
+export default function DashboardClient({ profile }: any) {
+  const [timeframe, setTimeframe] = useState<Timeframe>('jahr'); // Default to year to show off seasonality
+
+  // FILTER LOGIC
+  const now = new Date(2026, 7, 12); // Simulated "now" is August 12, 2026
+  
+  const currentPeriodInvoices = useMemo(() => {
+    return cachedMockInvoices.filter((inv) => {
+      const d = new Date(inv.created_at);
+      if (timeframe === 'monat') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (timeframe === 'quartal') return Math.floor(d.getMonth() / 3) === Math.floor(now.getMonth() / 3) && d.getFullYear() === now.getFullYear();
+      if (timeframe === 'jahr') return d.getFullYear() === now.getFullYear();
+      return true;
+    });
+  }, [timeframe]);
+
+  const previousPeriodInvoices = useMemo(() => {
+    return cachedMockInvoices.filter((inv) => {
+      const d = new Date(inv.created_at);
+      if (timeframe === 'monat') return d.getMonth() === (now.getMonth() === 0 ? 11 : now.getMonth() - 1) && d.getFullYear() === (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
+      if (timeframe === 'quartal') {
+        const prevQ = Math.floor(now.getMonth() / 3) - 1;
+        const targetYear = prevQ < 0 ? now.getFullYear() - 1 : now.getFullYear();
+        const targetQ = prevQ < 0 ? 3 : prevQ;
+        return Math.floor(d.getMonth() / 3) === targetQ && d.getFullYear() === targetYear;
+      }
+      if (timeframe === 'jahr') return d.getFullYear() === now.getFullYear() - 1;
+      return true;
+    });
+  }, [timeframe]);
+
+  const currentBilled = currentPeriodInvoices.reduce((sum, inv) => sum + inv.gross_amount, 0);
+  const previousBilled = previousPeriodInvoices.reduce((sum, inv) => sum + inv.gross_amount, 0);
+  const growth = previousBilled === 0 ? 0 : ((currentBilled - previousBilled) / previousBilled) * 100;
+
+  // FORECAST LOGIC
+  const forecast = useMemo(() => {
+    if (timeframe === 'monat') return (currentBilled / 12) * 31; // Extrapolate August 12
+    if (timeframe === 'quartal') return (currentBilled / 42) * 90; // Approx 42 days into Q3
+    if (timeframe === 'jahr') return (currentBilled / 224) * 365; // Approx 224 days into 2026
+    return currentBilled;
+  }, [timeframe, currentBilled]);
+
+  // LEADERBOARD LOGIC
+  const getLeaderboard = (invoices: any[]) => {
+    const map: Record<string, number> = {};
+    invoices.forEach(i => map[i.vendor_name] = (map[i.vendor_name] || 0) + i.gross_amount);
+    const total = Object.values(map).reduce((a,b)=>a+b, 0);
+    return Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map((entry, idx) => ({
+        rank: idx + 1,
+        name: entry[0],
+        amount: entry[1],
+        share: total > 0 ? (entry[1] / total) * 100 : 0
+      }));
+  };
+
+  const currentLeaderboard = getLeaderboard(currentPeriodInvoices);
+  const prevLeaderboard = getLeaderboard(previousPeriodInvoices);
+  const leaderboard = currentLeaderboard.map(curr => {
+    const prev = prevLeaderboard.find(p => p.name === curr.name);
+    const pAmount = prev ? prev.amount : 0;
+    const g = pAmount === 0 ? 100 : ((curr.amount - pAmount) / pAmount) * 100;
+    return { ...curr, growth: g, status: g >= 0 ? 'up' : 'down' };
+  });
+
+  // GEO DATA
+  const getGeoData = (invoices: any[]) => {
+    const map: Record<string, number> = {};
+    invoices.forEach(i => map[i.region_name] = (map[i.region_name] || 0) + i.gross_amount);
+    return Object.entries(map).map(([region, value]) => ({ region, value }));
+  };
+  const geoData = getGeoData(currentPeriodInvoices);
+
+  // TREND DATA
+  const trendData = useMemo(() => {
+    const data = [];
+    if (timeframe === 'jahr') {
+      for (let i = 0; i < 12; i++) {
+        const currMonth = currentPeriodInvoices.filter(inv => new Date(inv.created_at).getMonth() === i).reduce((s,i)=>s+i.gross_amount,0);
+        const prevMonth = previousPeriodInvoices.filter(inv => new Date(inv.created_at).getMonth() === i).reduce((s,i)=>s+i.gross_amount,0);
+        const monthNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+        data.push({ name: monthNames[i], current: currMonth, previous: prevMonth });
+      }
+    } else if (timeframe === 'monat') {
+      // 4 weeks roughly
+      for(let i=0; i<4; i++) {
+        data.push({ name: `W${i+1}`, current: currentBilled * (0.2 + (i*0.05)), previous: previousBilled * 0.25 }); // Highly mocked shape
+      }
+    } else {
+      data.push({ name: 'M1', current: currentBilled * 0.3, previous: previousBilled * 0.33 });
+      data.push({ name: 'M2', current: currentBilled * 0.4, previous: previousBilled * 0.33 });
+      data.push({ name: 'M3', current: currentBilled * 0.3, previous: previousBilled * 0.33 });
+    }
+    return data;
+  }, [timeframe, currentPeriodInvoices, previousPeriodInvoices, currentBilled, previousBilled]);
+
+  // FLOW CHECK (Historial Tracker for 2026)
   const flowCheckData = [
-    { month: 'August', generated: 215, zugferd: 215, clientSent: 212, taxSent: false, zipDays: 4, status: 'active' },
-    { month: 'Juli', generated: 482, zugferd: 482, clientSent: 480, taxSent: true, zipDays: 0, status: 'completed' },
-    { month: 'Juni', generated: 410, zugferd: 410, clientSent: 410, taxSent: true, zipDays: 0, status: 'completed' },
-    { month: 'Mai', generated: 385, zugferd: 384, clientSent: 384, taxSent: true, zipDays: 0, status: 'completed' },
+    { month: 'August 26', generated: 142, zugferd: 142, clientSent: 140, taxSent: false, zipDays: 19, status: 'active' },
+    { month: 'Juli 26', generated: 450, zugferd: 450, clientSent: 449, taxSent: true, zipDays: 0, status: 'completed' },
+    { month: 'Juni 26', generated: 480, zugferd: 480, clientSent: 480, taxSent: true, zipDays: 0, status: 'completed' },
+    { month: 'Mai 26', generated: 512, zugferd: 510, clientSent: 510, taxSent: true, zipDays: 0, status: 'completed' },
+    { month: 'Apr 26', generated: 490, zugferd: 490, clientSent: 490, taxSent: true, zipDays: 0, status: 'completed' },
+    { month: 'Mär 26', generated: 520, zugferd: 520, clientSent: 520, taxSent: true, zipDays: 0, status: 'completed' },
   ];
 
-  // Trend Data (Current vs Previous)
-  const trendData = [
-    { name: 'W1', current: 12000, previous: 9000 },
-    { name: 'W2', current: 28000, previous: 22000 },
-    { name: 'W3', current: 45000, previous: 38000 },
-    { name: 'W4', current: 82000, previous: 75000 },
-    { name: 'W5', current: 124500, previous: 108200 },
-  ];
+  // AI Insights Generation based on real data
+  const generateAiInsights = () => {
+    const insights = [];
+    
+    // Seasonality insight
+    if (timeframe === 'jahr') {
+      insights.push(`Saisonales Muster erkannt: Januar, Februar und August zeigen konsistente Umsatzdellen (-60% vs. Jahresdurchschnitt). Urlaubszeiten einkalkulieren.`);
+    } else if (timeframe === 'monat' && now.getMonth() === 7) {
+      insights.push(`Warnung: Der August-Umsatz ist traditionell schwach. Die KI-Prognose rechnet mit ${forecast.toLocaleString('de-DE', {style:'currency', currency:'EUR'})} am Monatsende.`);
+    }
+
+    // Geofence insight
+    const munichShare = geoData.find(g => g.region.includes('80333'))?.value || 0;
+    const munichPercent = currentBilled > 0 ? Math.round((munichShare / currentBilled) * 100) : 0;
+    if (munichPercent > 30) {
+      insights.push(`Extremer lokaler Fokus: ${munichPercent}% des fakturierten Umsatzes entsteht im 15km Radius um München Zentrum (80333).`);
+    }
+
+    // Customer insight
+    if (leaderboard.length > 0 && leaderboard[0].growth > 10) {
+      insights.push(`Abhängigkeitswarnung: '${leaderboard[0].name}' wächst rasant (+${leaderboard[0].growth.toFixed(1)}%) und macht nun ${leaderboard[0].share.toFixed(1)}% des Gesamtvolumens aus.`);
+    }
+
+    return insights;
+  };
+  const aiInsights = generateAiInsights();
 
   const limits = { 'STARTER': 25, 'PRO': 75, 'BUSINESS': 150 };
   const maxInvoices = (limits as any)[profile?.tier || 'STARTER'] || 25;
@@ -77,7 +242,7 @@ export default function DashboardClient({ profile, channels, invoices }: any) {
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-core font-sans">
-              {totalBilled.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+              {currentBilled.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
             </h1>
             <div className={cn(
               "flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm",
@@ -133,7 +298,7 @@ export default function DashboardClient({ profile, channels, invoices }: any) {
             </div>
             <div>
               <h3 className="font-bold text-core text-lg">Top Kunden Race</h3>
-              <p className="text-xs text-core/50 font-mono">Monatliches Volumen-Ranking</p>
+              <p className="text-xs text-core/50 font-mono">Volumen-Ranking ({timeframe})</p>
             </div>
           </div>
 
@@ -157,12 +322,12 @@ export default function DashboardClient({ profile, channels, invoices }: any) {
                         className={cn("h-full rounded-full", item.rank === 1 ? "bg-action" : "bg-core")} 
                       />
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-core/50 w-8">{item.share}%</span>
+                    <span className="text-[10px] font-mono font-bold text-core/50 w-8">{item.share.toFixed(1)}%</span>
                     <span className={cn(
-                      "text-[10px] font-mono font-bold flex items-center w-12",
+                      "text-[10px] font-mono font-bold flex items-center w-14",
                       item.status === 'up' ? "text-green-500" : "text-red-500"
                     )}>
-                      {item.status === 'up' ? '▲' : '▼'} {Math.abs(item.growth)}%
+                      {item.status === 'up' ? '▲' : '▼'} {Math.abs(item.growth).toFixed(1)}%
                     </span>
                   </div>
                 </div>
@@ -180,7 +345,7 @@ export default function DashboardClient({ profile, channels, invoices }: any) {
               </div>
               <div>
                 <h3 className="font-bold text-core text-lg">Cashflow Momentum</h3>
-                <p className="text-xs text-core/50 font-mono">Aktueller Zeitraum vs. Vorperiode</p>
+                <p className="text-xs text-core/50 font-mono">Aktueller Zeitraum vs. Vorperiode (inkl. Saisonalität)</p>
               </div>
             </div>
             {/* Legend */}
@@ -277,73 +442,55 @@ export default function DashboardClient({ profile, channels, invoices }: any) {
       </motion.div>
 
       {/* -------------------------------------------------------------
-          ROW 3: KI INSIGHTS & OPERATIONAL HEALTH
+          ROW 3: KI INSIGHTS & GEOFENCING
           ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        {/* AI INSIGHTS WIDGET */}
-        <motion.div variants={itemVariants} className="bg-core text-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-10">
-            <Sparkles className="w-24 h-24" />
-          </div>
-          <div className="flex items-center gap-3 mb-6 relative z-10">
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/10">
-              <Sparkles className="w-5 h-5 text-action" />
+        {/* GEO MAPPING WIDGET (Munich Radius) */}
+        <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 flex flex-col">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-core/5 flex items-center justify-center">
+              <Map className="w-5 h-5 text-core" />
             </div>
-            <h3 className="font-bold text-lg">Futrdesk Intelligence</h3>
+            <div>
+              <h3 className="font-bold text-core">Kunden-Geofence</h3>
+              <p className="text-xs text-core/40">150km Radius um 80333 München</p>
+            </div>
           </div>
-          <div className="flex flex-col gap-4 relative z-10 flex-1 justify-center">
+
+          <div className="flex-1 flex flex-col items-center justify-center mt-4 -ml-6">
+            <ResponsiveContainer width="110%" height={220}>
+              <RadarChart cx="50%" cy="50%" outerRadius="65%" data={geoData}>
+                <PolarGrid stroke="#f1f5f9" />
+                <PolarAngleAxis dataKey="region" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} />
+                <Radar dataKey="value" stroke="#ef8354" strokeWidth={2} fill="#ef8354" fillOpacity={0.2} />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 'bold' }} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* AI INSIGHTS WIDGET */}
+        <motion.div variants={itemVariants} className="lg:col-span-2 bg-core text-white rounded-[32px] p-8 shadow-[0_10px_40px_rgba(45,49,66,0.3)] flex flex-col relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-6 opacity-10">
+            <Sparkles className="w-32 h-32" />
+          </div>
+          <div className="flex items-center gap-3 mb-8 relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/10">
+              <Sparkles className="w-6 h-6 text-action" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Futrdesk Intelligence</h3>
+              <p className="text-white/40 text-xs font-mono">Echtzeit Analyse der Ausgangsrechnungen</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-5 relative z-10 flex-1 justify-center">
             {aiInsights.map((insight, idx) => (
-              <div key={idx} className="flex gap-3 text-sm">
-                <div className="w-1.5 h-1.5 rounded-full bg-action shrink-0 mt-1.5" />
-                <p className="text-white/80 leading-relaxed font-sans">{insight}</p>
+              <div key={idx} className="flex gap-4 items-start bg-white/5 p-4 rounded-2xl border border-white/5">
+                <div className="w-2 h-2 rounded-full bg-action shrink-0 mt-2" />
+                <p className="text-white/90 leading-relaxed font-sans font-medium">{insight}</p>
               </div>
             ))}
-          </div>
-        </motion.div>
-
-        {/* CHANNELS WIDGET */}
-        <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 flex flex-col justify-between">
-          <div>
-            <h3 className="font-bold text-core text-lg">Inbound-Kanäle</h3>
-            <p className="text-sm text-core/50 mt-1">Lauschende Gateways</p>
-          </div>
-          
-          <div className="flex items-center gap-4 mt-8">
-            <div className="flex-1 h-16 rounded-2xl bg-gray-50 border border-shading/20 flex items-center justify-center relative group">
-              <Smartphone className="w-6 h-6 text-[#25D366]" />
-              <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-sm" />
-            </div>
-            <div className="flex-1 h-16 rounded-2xl bg-gray-50 border border-shading/20 flex items-center justify-center relative group">
-              <Send className="w-6 h-6 text-[#0088cc]" />
-              <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-sm" />
-            </div>
-            <div className="flex-1 h-16 rounded-2xl bg-gray-50 border border-shading/20 flex items-center justify-center relative group opacity-50">
-              <Mail className="w-6 h-6 text-core" />
-              {/* Not connected mock */}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* LIMITS WIDGET */}
-        <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-bold text-core text-lg">Infrastruktur</h3>
-              <p className="text-sm text-core/50 mt-1">Abo-Tarif: <span className="font-mono font-bold text-core">{profile?.tier || 'STARTER'}</span></p>
-            </div>
-          </div>
-          
-          <div className="mt-8">
-            <div className="flex justify-between items-end mb-2">
-              <span className="font-mono text-xs text-core/60 uppercase tracking-widest">Auslastung</span>
-              <span className="font-mono text-sm font-bold text-core">{usedInvoices} <span className="text-core/40">/ {maxInvoices}</span></span>
-            </div>
-            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-action rounded-full transition-all duration-1000 relative overflow-hidden" style={{ width: `${Math.min(100, (usedInvoices / maxInvoices) * 100)}%` }}>
-                <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite] -translate-x-full" />
-              </div>
-            </div>
           </div>
         </motion.div>
 
