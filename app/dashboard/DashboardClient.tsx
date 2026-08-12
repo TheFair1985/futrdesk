@@ -332,9 +332,8 @@ export default function DashboardClient({ profile }: any) {
 
         {/* Hero Logo Absolute Background Element */}
         <div 
-          className="absolute right-0 top-0 w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
+          className="absolute -top-[5%] -right-[5%] w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
           onClick={() => document.getElementById('logo-upload')?.click()}
-          style={{ transform: 'translate(5%, -5%)' }}
         >
           <Image src={customLogo || "/image.png"} fill className="object-contain" alt="Company Logo" />
           <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 backdrop-blur-sm rounded-full m-8 border border-white/50 shadow-sm text-center p-4">
@@ -430,7 +429,7 @@ export default function DashboardClient({ profile }: any) {
                   labelFormatter={(label) => {
                     if (timeframe === 'jahr') return `Monat: ${label}`;
                     if (timeframe === 'monat') return `Kalenderwoche: ${label}`;
-                    return `Zeitraum: ${label}`;
+                    return `Quartal: ${label}`;
                   }}
                 />
                 <Area type="monotone" dataKey="Vorher" stroke="#2d3142" strokeOpacity={0.2} strokeWidth={2} strokeDasharray="5 5" fill="none" />
@@ -514,8 +513,7 @@ export default function DashboardClient({ profile }: any) {
           ------------------------------------------------------------- */}
       <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 overflow-hidden relative">
         <div 
-          className="absolute right-0 top-0 w-80 h-80 pointer-events-none opacity-20 mix-blend-multiply" 
-          style={{ transform: 'translate(5%, -5%)' }}
+          className="absolute -top-[5%] -right-[5%] w-80 h-80 pointer-events-none opacity-20 mix-blend-multiply" 
         >
           <Image src={customLogo || "/image.png"} fill className="object-contain" alt="Watermark" />
         </div>
