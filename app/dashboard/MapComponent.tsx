@@ -13,8 +13,8 @@ export default function MapComponent({ geoData, logoUrl }: { geoData: any[], log
   const hqIcon = useMemo(() => {
     return divIcon({
       className: 'custom-hq-marker',
-      html: `<div style="background-color: white; border: 2px solid #2d3142; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); overflow: hidden; padding: 4px;">
-               <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply;" />
+      html: `<div style="background-color: white; border: 2px solid #2d3142; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); overflow: hidden; padding: 2px;">
+               <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transform: scale(0.95);" />
              </div>`,
       iconSize: [36, 36],
       iconAnchor: [18, 18]

@@ -240,9 +240,21 @@ export default function DashboardClient({ profile }: any) {
       {/* -------------------------------------------------------------
           HEADER & SUPER-METRICS (The Cockpit)
           ------------------------------------------------------------- */}
-      <motion.div variants={itemVariants} className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 bg-white/90 backdrop-blur-sm p-8 rounded-[32px] shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10">
+      <motion.div variants={itemVariants} className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 bg-white/90 backdrop-blur-sm p-8 rounded-[32px] shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 relative overflow-hidden z-10">
         
-        <div className="flex flex-col gap-5">
+        {/* Hidden File Input for Logo */}
+        <input 
+          type="file" 
+          id="logo-upload" 
+          className="hidden" 
+          accept="image/*" 
+          onChange={(e) => { 
+            if(e.target.files?.[0]) setCustomLogo(URL.createObjectURL(e.target.files[0])) 
+          }} 
+        />
+
+        <div className="flex flex-col gap-5 relative z-10">
+          <h2 className="text-xl font-black text-core tracking-tight uppercase mb-2">{profile?.company_name || 'FutrDesk GmbH'}</h2>
           <div>
             <div className="flex items-center gap-4 mb-2">
               <span className="text-core/50 font-bold text-sm tracking-widest uppercase">Fakturierter Ausgangsumsatz</span>
@@ -291,31 +303,11 @@ export default function DashboardClient({ profile }: any) {
         </div>
 
         {/* RIGHT SIDE: COMPANY & TIME TOGGLE */}
-        <div className="flex flex-col items-end gap-8 shrink-0">
+        <div className="flex flex-col items-end gap-8 shrink-0 relative z-10">
           
-          <div className="flex flex-col items-end gap-3 group relative cursor-pointer" onClick={() => document.getElementById('logo-upload')?.click()}>
-            <input 
-              type="file" 
-              id="logo-upload" 
-              className="hidden" 
-              accept="image/*" 
-              onChange={(e) => { 
-                if(e.target.files?.[0]) setCustomLogo(URL.createObjectURL(e.target.files[0])) 
-              }} 
-            />
-            
-            <div className="relative w-28 h-28 bg-white rounded-3xl border border-shading/10 flex items-center justify-center shadow-md overflow-hidden transition-transform group-hover:scale-105">
-              <Image src={customLogo || "/image.png"} fill className="object-contain p-3 mix-blend-multiply" alt="Company Logo Mockup" />
-              <div className="absolute inset-0 bg-core/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold backdrop-blur-sm">
-                Logo ändern
-              </div>
-            </div>
-            <h2 className="text-xl font-black text-core tracking-tight">{profile?.company_name || 'FutrDesk GmbH'}</h2>
-          </div>
-
           <div className="flex flex-col items-end gap-2">
             <span className="text-xs font-bold text-core/40 uppercase tracking-widest mr-2">Zeitraum Filter</span>
-            <div className="flex items-center bg-gray-50/80 p-1.5 rounded-2xl shadow-inner border border-shading/10">
+            <div className="flex items-center bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl shadow-inner border border-shading/10">
               {(['monat', 'quartal', 'jahr'] as Timeframe[]).map((t) => (
                 <button
                   key={t}
@@ -333,6 +325,15 @@ export default function DashboardClient({ profile }: any) {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Hero Logo Absolute Background Element */}
+        <div 
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-72 h-72 rounded-full overflow-hidden opacity-30 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
+          onClick={() => document.getElementById('logo-upload')?.click()}
+          style={{ transform: 'translateX(20%)' }}
+        >
+          <Image src={customLogo || "/image.png"} fill className="object-contain p-4 group-hover:p-3 transition-all" alt="Company Logo" />
         </div>
       </motion.div>
 
@@ -474,7 +475,7 @@ export default function DashboardClient({ profile }: any) {
             {/* User Prompt Mock */}
             <div className="flex items-start gap-4">
               <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden relative shadow-sm">
-                <Image src={customLogo || "/image.png"} fill className="object-contain p-1.5 mix-blend-multiply" alt="User" />
+                <Image src={customLogo || "/image.png"} fill className="object-contain p-1 mix-blend-multiply scale-90" alt="User" />
               </div>
               <div className="pt-1.5">
                 <p className="text-sm font-semibold text-gray-800">Generiere einen aktuellen Performance-Bericht inkl. saisonaler Effekte.</p>
