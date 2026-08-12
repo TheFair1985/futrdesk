@@ -21,9 +21,12 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen bg-[#fafafa] font-sans selection:bg-action/20 selection:text-action">
+    <div className="flex h-screen bg-[#fafafa] font-sans selection:bg-action/20 selection:text-action relative z-0">
+      {/* Global Background Grid (Intense) */}
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#8080801a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+      
       {/* Sleek Minimalist Sidebar */}
-      <aside className="w-64 bg-white flex flex-col shrink-0 border-r border-shading/20 relative z-20 shadow-[4px_0_24px_rgba(0,0,0,0.01)]">
+      <aside className="w-64 bg-white/95 backdrop-blur-md flex flex-col shrink-0 border-r border-shading/20 relative z-20 shadow-[4px_0_24px_rgba(0,0,0,0.01)]">
         
         {/* Logo */}
         <div className="h-24 flex items-center px-8">
@@ -85,9 +88,8 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 relative overflow-y-auto">
-        <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-        <div className="max-w-[1400px] mx-auto p-12 lg:p-16 relative z-10">
+      <main className="flex-1 relative overflow-y-auto z-10">
+        <div className="max-w-[1400px] mx-auto p-12 lg:p-16 relative">
           {children}
         </div>
       </main>

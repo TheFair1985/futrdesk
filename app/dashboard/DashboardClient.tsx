@@ -293,8 +293,8 @@ export default function DashboardClient({ profile }: any) {
         <div className="flex flex-col items-end gap-8 shrink-0">
           
           <div className="flex flex-col items-end gap-2.5">
-            <div className="w-12 h-12 bg-white rounded-2xl border border-shading/10 flex items-center justify-center shadow-sm overflow-hidden">
-              <Image src="/futrdesk.png" width={48} height={48} alt="Company Logo Mockup" className="opacity-90 contrast-125 object-cover" />
+            <div className="w-12 h-12 bg-white rounded-2xl border border-shading/10 flex items-center justify-center shadow-sm overflow-hidden p-1">
+              <Image src="/image.png" width={40} height={40} alt="Company Logo Mockup" className="opacity-90 contrast-125 object-contain" />
             </div>
             <h2 className="text-lg font-black text-core tracking-tight">{profile?.company_name || 'FutrDesk GmbH'}</h2>
           </div>
@@ -459,7 +459,9 @@ export default function DashboardClient({ profile }: any) {
           <div className="p-6 flex flex-col gap-6 bg-white max-h-[300px] overflow-y-auto">
             {/* User Prompt Mock */}
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-core text-white flex items-center justify-center font-bold text-xs shrink-0">FD</div>
+              <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden p-1">
+                <Image src="/image.png" width={24} height={24} className="object-contain" alt="User" />
+              </div>
               <div className="pt-1.5">
                 <p className="text-sm font-semibold text-gray-800">Generiere einen aktuellen Performance-Bericht inkl. saisonaler Effekte.</p>
               </div>
@@ -487,8 +489,8 @@ export default function DashboardClient({ profile }: any) {
           ROW 4: HISTORICAL PIPELINE TRACKER (Verarbeitungs-Historie)
           ------------------------------------------------------------- */}
       <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-          <Archive className="w-64 h-64" />
+        <div className="absolute top-0 right-0 p-8 pointer-events-none flex items-center justify-center w-64 h-64 -mt-10 -mr-10">
+          <Image src="/image.png" width={256} height={256} className="object-contain opacity-10 -rotate-45" alt="Watermark" />
         </div>
         
         <div className="flex flex-col gap-4 mb-8 relative z-10">
