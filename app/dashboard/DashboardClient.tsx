@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from "framer-motion";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
-import { TrendingUp, Users, CheckCircle2, Smartphone, Send, Mail, Map, Zap, ArrowUpRight, ArrowDownRight, Clock, Archive, Trophy, Sparkles, Activity, Info, FileText, Bot, AlertTriangle } from "lucide-react";
+import { TrendingUp, Users, CheckCircle2, Smartphone, Send, Mail, Map, Zap, ArrowUpRight, ArrowDownRight, Clock, Archive, Trophy, Sparkles, Activity, Info, FileText, Bot, AlertTriangle, Database } from "lucide-react";
 import { cn } from "../../lib/utils";
 import Image from "next/image";
 
@@ -310,7 +310,6 @@ export default function DashboardClient({ profile }: any) {
         <div className="flex flex-col items-end gap-8 shrink-0 relative z-10">
           
           <div className="flex flex-col items-end gap-2">
-            <span className="text-xs font-bold text-core/40 uppercase tracking-widest mr-2">Zeitraum Filter</span>
             <div className="flex items-center bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl shadow-inner border border-shading/10">
               {(['monat', 'quartal', 'jahr'] as Timeframe[]).map((t) => (
                 <button
@@ -333,11 +332,15 @@ export default function DashboardClient({ profile }: any) {
 
         {/* Hero Logo Absolute Background Element */}
         <div 
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-72 h-72 rounded-full overflow-hidden opacity-30 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
           onClick={() => document.getElementById('logo-upload')?.click()}
-          style={{ transform: 'translate(20%, -50%)' }}
+          style={{ transform: 'translate(5%, -50%)' }}
         >
-          <Image src={customLogo || "/image.png"} fill className="object-cover scale-110" alt="Company Logo" />
+          <Image src={customLogo || "/image.png"} fill className="object-contain" alt="Company Logo" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 backdrop-blur-sm rounded-full m-8 border border-white/50 shadow-sm text-center p-4">
+            <span className="text-core font-bold text-sm mb-1">Logo ändern</span>
+            <span className="text-core/60 text-[10px] font-medium leading-tight">Format 1:1 (z.B. 1000x1000px)<br/>Max. 5 MB</span>
+          </div>
         </div>
       </motion.div>
 
@@ -423,8 +426,12 @@ export default function DashboardClient({ profile }: any) {
                 <Tooltip 
                   cursor={{ fill: 'transparent' }} 
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontWeight: 'bold' }}
-                  formatter={(value: number) => [value.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}), 'Umsatz']}
-                  labelFormatter={(label) => `Abschnitt: ${label}`}
+                  formatter={(value: number) => [value.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}), 'Fakturierter Umsatz']}
+                  labelFormatter={(label) => {
+                    if (timeframe === 'jahr') return `Monat: ${label}`;
+                    if (timeframe === 'monat') return `Kalenderwoche: ${label}`;
+                    return `Zeitraum: ${label}`;
+                  }}
                 />
                 <Area type="monotone" dataKey="Vorher" stroke="#2d3142" strokeOpacity={0.2} strokeWidth={2} strokeDasharray="5 5" fill="none" />
                 <Area type="monotone" dataKey="Aktuell" stroke="#ef8354" strokeWidth={4} fillOpacity={1} fill="url(#colorCurrent)" />
@@ -511,9 +518,14 @@ export default function DashboardClient({ profile }: any) {
         </div>
         
         <div className="flex flex-col gap-4 mb-8 relative z-10">
-          <div>
-            <h3 className="font-bold text-core text-xl flex items-center gap-2">Verarbeitungs-Historie</h3>
-            <p className="text-sm text-core/50 mt-1">Lückenlose Nachverfolgung des GoBD-Workflows und ZUGFeRD-Konvertierung.</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
+              <Database className="w-5 h-5 text-core" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-core leading-none">Verarbeitungs-Historie</h3>
+              <p className="text-sm text-core/50 mt-1">Lückenlose Nachverfolgung des GoBD-Workflows und ZUGFeRD-Konvertierung.</p>
+            </div>
           </div>
           
           <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl flex flex-wrap gap-6 text-xs text-core/70 font-medium w-fit">
