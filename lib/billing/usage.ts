@@ -52,11 +52,11 @@ export async function checkAndConsumeInvoice(userId: string): Promise<boolean> {
 
 async function triggerUpsellWarning(user: any, userId: string) {
   const tier = user.tier || 'STARTER';
-  const shopId = process.env.LEMON_SQUEEZY_SHOP_ID || 'futrdesk.lemonsqueezy.com';
   
-  // Checkout base URL construction (One-click logic without leaving chat)
+  // Checkout base URL construction - Link Prettifier
+  // Using an internal redirect avoids spam filters and looks clean!
   const createCheckoutLink = (variantId: string) => 
-    `https://${shopId}/checkout/buy/${variantId}?checkout[custom][user_id]=${userId}`;
+    `https://futrdesk.com/api/checkout?variant=${variantId}&user=${userId}`;
 
   const V_PRO = process.env.LEMON_SQUEEZY_PRODUCT_PRO || '1285123';
   const V_BUSINESS = process.env.LEMON_SQUEEZY_PRODUCT_BUSINESS_ID || '1285127';
@@ -64,49 +64,59 @@ async function triggerUpsellWarning(user: any, userId: string) {
   const V_PAKET20 = process.env.LEMON_SQUEEZY_PRODUCT_RECHNUNGSPAKET_20 || '1285162';
   const V_PAKET50 = process.env.LEMON_SQUEEZY_PRODUCT_RECHNUNGSPAKET_50 || '1285169';
 
-  let message = `⚠️ *Rechnungslimit erreicht!*\n\nDein Kontingent für diesen Monat ist aufgebraucht.\n\n`;
+  let message = `⚠️ *Rechnungslimit erreicht!*\n\nDein Kontingent für diesen Monat ist aufgebraucht. Das Dokument wird pausiert.\n\n`;
 
+  let primaryUpgradeVariant = '';
   if (tier === 'STARTER') {
+    primaryUpgradeVariant = V_PRO;
     message += `💡 *Smart Tipp:*\nDein Verbrauch steigt! Ein Upgrade auf PRO (75 Rechnungen/M) ist jetzt mathematisch viel günstiger als Einzelpakete.\n\n`;
     message += `🚀 *1-Klick Upgrade auf PRO (49,99€):*\n👉 ${createCheckoutLink(V_PRO)}\n\n`;
   } else if (tier === 'PRO') {
+    primaryUpgradeVariant = V_BUSINESS;
     message += `💡 *Smart Tipp:*\nDu bist ein Power-User! Ein Upgrade auf BUSINESS (150 Rechnungen/M) sichert dich entspannt ab.\n\n`;
     message += `🚀 *1-Klick Upgrade auf BUSINESS (99,99€):*\n👉 ${createCheckoutLink(V_BUSINESS)}\n\n`;
   }
 
-  message += `📦 *Oder Einmal-Paket buchen (Sofortige Freischaltung):*\n`;
+  message += `📦 *Oder Einmal-Paket buchen (Sofortige automatische Verarbeitung):*\n`;
   message += `- 1x Rechnung (1,99€): ${createCheckoutLink(V_EINZEL)}\n`;
   message += `- Paket 20 (29,99€): ${createCheckoutLink(V_PAKET20)}\n`;
   message += `- Paket 50 (79,99€): ${createCheckoutLink(V_PAKET50)}`;
 
+  // Create Interactive Inline Keyboard for Telegram
+  const telegramButtons = {
+    inline_keyboard: [
+      primaryUpgradeVariant ? [{ text: '🚀 Abo-Upgrade', url: createCheckoutLink(primaryUpgradeVariant) }] : [],
+      [
+        { text: '📦 +1', url: createCheckoutLink(V_EINZEL) },
+        { text: '📦 +20', url: createCheckoutLink(V_PAKET20) },
+        { text: '📦 +50', url: createCheckoutLink(V_PAKET50) }
+      ]
+    ]
+  };
+
   const channels = user.channels?.[0]; // Assuming one active channel row per user
 
   try {
-    // Determine preferred routing based on heavy messaging users
     let routed = false;
     
-    // Check user preference first
     if (user.alert_channel === 'whatsapp' && channels?.whatsapp_number) {
+      // WhatsApp doesn't support generic URL buttons easily without templates, so we send the pretty text
       await sendWhatsAppText(channels.whatsapp_number, message);
       routed = true;
     } else if (user.alert_channel === 'telegram' && channels?.telegram_chat_id) {
-      await sendTelegramText(channels.telegram_chat_id, message);
+      // Telegram gets the rich CTA buttons!
+      await sendTelegramText(channels.telegram_chat_id, message, telegramButtons);
       routed = true;
     }
     
-    // Fallback if preference not set or missing
     if (!routed) {
       if (channels?.whatsapp_number) {
         await sendWhatsAppText(channels.whatsapp_number, message);
       } else if (channels?.telegram_chat_id) {
-        await sendTelegramText(channels.telegram_chat_id, message);
+        await sendTelegramText(channels.telegram_chat_id, message, telegramButtons);
       } else if (user.email) {
-        // Fallback to email
-        await sendEmailText(
-          user.email,
-          'Futrdesk: Rechnungslimit erreicht',
-          message
-        );
+        // Fallback to email (Using HTML would be better, but the text is pretty enough now)
+        await sendEmailText(user.email, 'Futrdesk: Rechnungslimit erreicht', message);
       }
     }
   } catch (error) {

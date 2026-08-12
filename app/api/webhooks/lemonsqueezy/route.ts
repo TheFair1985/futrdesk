@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
+import { processAndDeliverInvoice } from '../../../../lib/ai/processAndDeliverInvoice';
 
 const getSupabaseAdmin = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -84,13 +85,32 @@ export async function POST(request: Request) {
         updatePayload.tier = newTier;
       }
       
-      // Update renewal/end date
       if (payload.data.attributes.renews_at) {
         updatePayload.current_period_end = payload.data.attributes.renews_at;
       }
 
       await supabaseAdmin.from('users').update(updatePayload).eq('id', userId);
       console.log(`Updated subscription state for user ${userId}: Status ${status}`);
+    }
+
+    // --- 3. AUTO-RESUME LOGIC ---
+    // If a user just bought a package or upgraded, they now have credits.
+    // Find any invoices held in 'payment_required' state and resume them!
+    const { data: heldInvoices } = await supabaseAdmin
+      .from('invoices')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'payment_required');
+
+    if (heldInvoices && heldInvoices.length > 0) {
+      console.log(`Auto-resuming ${heldInvoices.length} held invoices for user ${userId}`);
+      for (const inv of heldInvoices) {
+        // Technically we should check checkAndConsumeInvoice here again just in case, 
+        // but since they just bought credits we know they have capacity.
+        // For absolute correctness, we update status and fire the background worker:
+        await supabaseAdmin.from('invoices').update({ status: 'processing' }).eq('id', inv.id);
+        processAndDeliverInvoice(inv.id).catch(console.error);
+      }
     }
 
     return new NextResponse('OK', { status: 200 });
