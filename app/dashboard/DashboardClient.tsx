@@ -336,7 +336,7 @@ export default function DashboardClient({ profile }: any) {
           className="absolute top-0 right-0 -mt-4 -mr-4 w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
           onClick={() => document.getElementById('logo-upload')?.click()}
         >
-          <Image src={customLogo || "/image.png"} fill className="object-contain" alt="Company Logo" />
+          <Image src={customLogo || "/image.png"} fill className="object-contain object-right-top" alt="Company Logo" />
           <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 backdrop-blur-sm rounded-full m-8 border border-white/50 shadow-sm text-center p-4">
             <span className="text-core font-bold text-sm mb-1">Logo ändern</span>
             <span className="text-core/60 text-[10px] font-medium leading-tight">Format 1:1 (z.B. 1000x1000px)<br/>Max. 5 MB</span>
@@ -428,9 +428,9 @@ export default function DashboardClient({ profile }: any) {
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontWeight: 'bold' }}
                   formatter={(value: number) => [value.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}), 'Fakturierter Umsatz']}
                   labelFormatter={(label) => {
-                    if (timeframe === 'jahr') return `Monat: ${label}`;
-                    if (timeframe === 'monat') return `Kalenderwoche: ${label}`;
-                    return `Quartal: ${label}`;
+                    if (timeframe === 'jahr') return `Monat ${label}`;
+                    if (timeframe === 'monat') return `Kalenderwoche ${label}`;
+                    return `Quartal ${label}`;
                   }}
                 />
                 <Area type="monotone" dataKey="Vorher" stroke="#2d3142" strokeOpacity={0.2} strokeWidth={2} strokeDasharray="5 5" fill="none" />
@@ -516,7 +516,7 @@ export default function DashboardClient({ profile }: any) {
         <div 
           className="absolute top-0 right-0 -mt-4 -mr-4 w-80 h-80 pointer-events-none opacity-20 mix-blend-multiply" 
         >
-          <Image src={customLogo || "/image.png"} fill className="object-contain" alt="Watermark" />
+          <Image src={customLogo || "/image.png"} fill className="object-contain object-right-top" alt="Watermark" />
         </div>
         
         <div className="flex flex-col gap-4 mb-8 relative z-10">
