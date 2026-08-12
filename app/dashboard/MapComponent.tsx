@@ -1,23 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Tooltip, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { divIcon } from 'leaflet';
 
-export default function MapComponent({ geoData }: { geoData: any[] }) {
+export default function MapComponent({ geoData, logoUrl }: { geoData: any[], logoUrl: string }) {
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  const hqIcon = useMemo(() => {
+    return divIcon({
+      className: 'custom-hq-marker',
+      html: `<div style="background-color: white; border: 2px solid #2d3142; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); overflow: hidden; padding: 4px;">
+               <img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply;" />
+             </div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
+    });
+  }, [logoUrl]);
 
-  const hqIcon = divIcon({
-    className: 'custom-hq-marker',
-    html: `<div style="background-color: #2d3142; color: white; border: 2px solid white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">HQ</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
-  });
+  if (!mounted) return null;
 
   return (
     <MapContainer 

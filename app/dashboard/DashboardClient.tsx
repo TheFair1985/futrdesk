@@ -100,6 +100,7 @@ export default function DashboardClient({ profile }: any) {
   const [mounted, setMounted] = useState(false);
   const [timeframe, setTimeframe] = useState<Timeframe>('jahr');
   const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [customLogo, setCustomLogo] = useState<string | null>(null);
 
   useEffect(() => {
     if (cachedMockInvoices.length === 0) {
@@ -292,11 +293,24 @@ export default function DashboardClient({ profile }: any) {
         {/* RIGHT SIDE: COMPANY & TIME TOGGLE */}
         <div className="flex flex-col items-end gap-8 shrink-0">
           
-          <div className="flex flex-col items-end gap-2.5">
-            <div className="w-12 h-12 bg-white rounded-2xl border border-shading/10 flex items-center justify-center shadow-sm overflow-hidden p-1">
-              <Image src="/image.png" width={40} height={40} alt="Company Logo Mockup" className="opacity-90 contrast-125 object-contain" />
+          <div className="flex flex-col items-end gap-3 group relative cursor-pointer" onClick={() => document.getElementById('logo-upload')?.click()}>
+            <input 
+              type="file" 
+              id="logo-upload" 
+              className="hidden" 
+              accept="image/*" 
+              onChange={(e) => { 
+                if(e.target.files?.[0]) setCustomLogo(URL.createObjectURL(e.target.files[0])) 
+              }} 
+            />
+            
+            <div className="relative w-28 h-28 bg-white rounded-3xl border border-shading/10 flex items-center justify-center shadow-md overflow-hidden transition-transform group-hover:scale-105">
+              <Image src={customLogo || "/image.png"} fill className="object-contain p-3 mix-blend-multiply" alt="Company Logo Mockup" />
+              <div className="absolute inset-0 bg-core/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold backdrop-blur-sm">
+                Logo ändern
+              </div>
             </div>
-            <h2 className="text-lg font-black text-core tracking-tight">{profile?.company_name || 'FutrDesk GmbH'}</h2>
+            <h2 className="text-xl font-black text-core tracking-tight">{profile?.company_name || 'FutrDesk GmbH'}</h2>
           </div>
 
           <div className="flex flex-col items-end gap-2">
@@ -459,8 +473,8 @@ export default function DashboardClient({ profile }: any) {
           <div className="p-6 flex flex-col gap-6 bg-white max-h-[300px] overflow-y-auto">
             {/* User Prompt Mock */}
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden p-1">
-                <Image src="/image.png" width={24} height={24} className="object-contain" alt="User" />
+              <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden relative shadow-sm">
+                <Image src={customLogo || "/image.png"} fill className="object-contain p-1.5 mix-blend-multiply" alt="User" />
               </div>
               <div className="pt-1.5">
                 <p className="text-sm font-semibold text-gray-800">Generiere einen aktuellen Performance-Bericht inkl. saisonaler Effekte.</p>
@@ -489,8 +503,8 @@ export default function DashboardClient({ profile }: any) {
           ROW 4: HISTORICAL PIPELINE TRACKER (Verarbeitungs-Historie)
           ------------------------------------------------------------- */}
       <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-8 pointer-events-none flex items-center justify-center w-64 h-64 -mt-10 -mr-10">
-          <Image src="/image.png" width={256} height={256} className="object-contain opacity-10 -rotate-45" alt="Watermark" />
+        <div className="absolute top-0 right-0 p-8 pointer-events-none flex items-center justify-center w-[300px] h-[300px] -mt-10 -mr-10">
+          <Image src={customLogo || "/image.png"} fill className="object-contain opacity-20 mix-blend-multiply" alt="Watermark" />
         </div>
         
         <div className="flex flex-col gap-4 mb-8 relative z-10">
@@ -574,7 +588,7 @@ export default function DashboardClient({ profile }: any) {
           </div>
 
           <div className="flex-1 w-full min-h-[300px] bg-gray-50 rounded-2xl overflow-hidden border border-shading/10 relative z-0">
-            <MapComponent geoData={mapData} />
+            <MapComponent geoData={mapData} logoUrl={customLogo || '/image.png'} />
           </div>
         </motion.div>
 
