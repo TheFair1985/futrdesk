@@ -4,12 +4,13 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { LayoutDashboard, Archive, Settings, CreditCard, LogOut } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { motion } from "framer-motion";
 
 const navigation = [
   { name: "Übersicht", href: "/dashboard", icon: LayoutDashboard },
   { name: "Archiv", href: "/dashboard/archive", icon: Archive },
+  { name: "Abrechnung", href: "/dashboard/billing", icon: CreditCard },
   { name: "Einstellungen", href: "/dashboard/settings", icon: Settings },
-  { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
 ];
 
 export default function DashboardLayout({
@@ -20,20 +21,20 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#2d3142] text-white flex flex-col border-r border-[#bfc0c0] shrink-0">
+    <div className="flex h-screen bg-[#fafafa] font-sans selection:bg-action/20 selection:text-action">
+      {/* Sleek Minimalist Sidebar */}
+      <aside className="w-64 bg-white flex flex-col shrink-0 border-r border-shading/20 relative z-20 shadow-[4px_0_24px_rgba(0,0,0,0.01)]">
         
         {/* Logo */}
-        <div className="h-20 flex items-center px-6 border-b border-white/10">
-          <span className="font-mono text-xl font-bold tracking-widest text-white">
-            FUTRDESK_
+        <div className="h-24 flex items-center px-8">
+          <span className="font-mono text-xl font-bold tracking-tighter text-core">
+            FUTRDESK
+            <span className="text-action">.</span>
           </span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-6 flex flex-col gap-2">
+        <nav className="flex-1 px-4 py-4 flex flex-col gap-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -41,13 +42,23 @@ export default function DashboardLayout({
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-6 py-3 font-sans text-sm transition-colors",
+                  "relative flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 group",
                   isActive
-                    ? "bg-white/10 border-l-[3px] border-[#ef8354] text-white font-bold"
-                    : "text-white/60 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent"
+                    ? "text-core"
+                    : "text-core/50 hover:text-core hover:bg-gray-50"
                 )}
               >
-                <item.icon className="w-4 h-4 shrink-0" />
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-gray-100/80 rounded-xl -z-10"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <item.icon className={cn(
+                  "w-4 h-4 shrink-0 transition-colors duration-200", 
+                  isActive ? "text-action" : "text-core/40 group-hover:text-core/70"
+                )} />
                 {item.name}
               </Link>
             );
@@ -55,28 +66,27 @@ export default function DashboardLayout({
         </nav>
 
         {/* User Footer */}
-        <div className="p-6 border-t border-white/10">
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-6">
+          <div className="p-4 rounded-2xl bg-gray-50 flex items-center justify-between border border-gray-100">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#ef8354] flex items-center justify-center font-mono text-xs font-bold shadow-inner">
+              <div className="w-8 h-8 rounded-full bg-core text-white flex items-center justify-center font-mono text-xs font-bold shadow-sm">
                 JD
               </div>
-              <span className="font-mono text-xs text-white/80">User</span>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-core">John Doe</span>
+                <span className="text-[10px] uppercase font-mono text-core/40">Pro Plan</span>
+              </div>
             </div>
+            <button className="text-core/40 hover:text-action transition-colors">
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-          <button className="flex items-center gap-2 text-white/50 hover:text-white transition-colors font-sans text-xs uppercase tracking-wider">
-            <LogOut className="w-3.5 h-3.5" />
-            Logout
-          </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <main className="flex-1 relative overflow-y-auto">
-        {/* Aceternity Dot Grid Pattern */}
-        <div className="absolute inset-0 z-0 bg-[radial-gradient(#bfc0c0_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30 pointer-events-none" />
-        
-        <div className="relative z-10 p-8 md:p-12">
+        <div className="max-w-[1400px] mx-auto p-12 lg:p-16 relative z-10">
           {children}
         </div>
       </main>
