@@ -312,7 +312,7 @@ export default function DashboardClient({ profile }: any) {
           
           {/* Centered Logo above Toggle */}
           <div 
-            className="relative w-56 h-56 my-auto opacity-60 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
+            className="relative w-[240px] h-[240px] my-auto opacity-60 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
             onClick={() => document.getElementById('logo-upload')?.click()}
           >
             <Image src={customLogo || "/image.png"} fill className="object-contain object-center" alt="Company Logo" />
