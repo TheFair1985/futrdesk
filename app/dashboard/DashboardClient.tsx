@@ -210,9 +210,10 @@ export default function DashboardClient({ profile }: any) {
         data.push({ name: `Woche ${i+1}`, Aktuell: currentBilled * (0.2 + (i*0.05)), Vorher: previousBilled * 0.25 });
       }
     } else {
-      data.push({ name: 'Monat 1', Aktuell: currentBilled * 0.3, Vorher: previousBilled * 0.33 });
-      data.push({ name: 'Monat 2', Aktuell: currentBilled * 0.4, Vorher: previousBilled * 0.33 });
-      data.push({ name: 'Monat 3', Aktuell: currentBilled * 0.3, Vorher: previousBilled * 0.33 });
+      data.push({ name: '1', Aktuell: currentBilled * 0.2, Vorher: previousBilled * 0.25 });
+      data.push({ name: '2', Aktuell: currentBilled * 0.25, Vorher: previousBilled * 0.25 });
+      data.push({ name: '3', Aktuell: currentBilled * 0.35, Vorher: previousBilled * 0.25 });
+      data.push({ name: '4', Aktuell: currentBilled * 0.2, Vorher: previousBilled * 0.25 });
     }
     return data;
   }, [timeframe, currentPeriodInvoices, previousPeriodInvoices, currentBilled, previousBilled]);
@@ -332,7 +333,7 @@ export default function DashboardClient({ profile }: any) {
 
         {/* Hero Logo Absolute Background Element */}
         <div 
-          className="absolute -top-[5%] -right-[5%] w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
+          className="absolute top-0 right-0 -mt-4 -mr-4 w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
           onClick={() => document.getElementById('logo-upload')?.click()}
         >
           <Image src={customLogo || "/image.png"} fill className="object-contain" alt="Company Logo" />
@@ -513,7 +514,7 @@ export default function DashboardClient({ profile }: any) {
           ------------------------------------------------------------- */}
       <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 overflow-hidden relative">
         <div 
-          className="absolute -top-[5%] -right-[5%] w-80 h-80 pointer-events-none opacity-20 mix-blend-multiply" 
+          className="absolute top-0 right-0 -mt-4 -mr-4 w-80 h-80 pointer-events-none opacity-20 mix-blend-multiply" 
         >
           <Image src={customLogo || "/image.png"} fill className="object-contain" alt="Watermark" />
         </div>
