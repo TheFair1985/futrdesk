@@ -308,9 +308,21 @@ export default function DashboardClient({ profile }: any) {
         </div>
 
         {/* RIGHT SIDE: COMPANY & TIME TOGGLE */}
-        <div className="flex flex-col items-end gap-8 shrink-0 relative z-10">
+        <div className="flex flex-col items-center shrink-0 relative z-10">
           
-          <div className="flex flex-col items-end gap-2">
+          {/* Centered Logo above Toggle */}
+          <div 
+            className="relative w-48 h-24 my-4 opacity-50 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
+            onClick={() => document.getElementById('logo-upload')?.click()}
+          >
+            <Image src={customLogo || "/image.png"} fill className="object-contain object-center" alt="Company Logo" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm text-center p-2">
+              <span className="text-core font-bold text-xs mb-1">Logo ändern</span>
+              <span className="text-core/60 text-[8px] font-medium leading-tight">Format 1:1<br/>Max. 5 MB</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
             <div className="flex items-center bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl shadow-inner border border-shading/10">
               {(['monat', 'quartal', 'jahr'] as Timeframe[]).map((t) => (
                 <button
@@ -328,18 +340,6 @@ export default function DashboardClient({ profile }: any) {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Hero Logo Absolute Background Element */}
-        <div 
-          className="absolute top-6 right-6 w-80 h-80 opacity-20 mix-blend-multiply cursor-pointer group z-0 transition-transform hover:scale-105"
-          onClick={() => document.getElementById('logo-upload')?.click()}
-        >
-          <Image src={customLogo || "/image.png"} fill className="object-contain object-right-top" alt="Company Logo" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 backdrop-blur-sm rounded-full m-8 border border-white/50 shadow-sm text-center p-4">
-            <span className="text-core font-bold text-sm mb-1">Logo ändern</span>
-            <span className="text-core/60 text-[10px] font-medium leading-tight">Format 1:1 (z.B. 1000x1000px)<br/>Max. 5 MB</span>
           </div>
         </div>
       </motion.div>
@@ -514,12 +514,6 @@ export default function DashboardClient({ profile }: any) {
           ROW 4: HISTORICAL PIPELINE TRACKER (Verarbeitungs-Historie)
           ------------------------------------------------------------- */}
       <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 shadow-[0_4px_30px_rgb(0,0,0,0.03)] border border-shading/10 overflow-hidden relative">
-        <div 
-          className="absolute top-6 right-6 w-80 h-80 pointer-events-none opacity-20 mix-blend-multiply" 
-        >
-          <Image src={customLogo || "/image.png"} fill className="object-contain object-right-top" alt="Watermark" />
-        </div>
-        
         <div className="flex flex-col gap-4 mb-8 relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
