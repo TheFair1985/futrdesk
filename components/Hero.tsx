@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, useAnimate } from "framer-motion";
 import { ArrowRight, Check, CheckCheck, FileCheck } from "lucide-react";
+import Link from "next/link";
 
 export function Hero() {
   const [scope, animate] = useAnimate();
@@ -99,10 +100,10 @@ export function Hero() {
         <motion.div variants={staggerItem} className="relative group w-fit cursor-pointer">
           {/* Shiny Edge Button Container */}
           <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-action via-white to-action opacity-70 group-hover:opacity-100 blur-[2px] transition duration-500 animate-pulse" />
-          <button className="relative bg-[#2d3142] text-white font-sans text-sm font-bold px-8 py-4 rounded-lg flex items-center justify-center gap-3 transition-transform duration-200 group-hover:scale-[1.02]">
+          <Link href="/login" className="relative bg-[#2d3142] text-white font-sans text-sm font-bold px-8 py-4 rounded-lg flex items-center justify-center gap-3 transition-transform duration-200 group-hover:scale-[1.02]">
             Jetzt starten
             <ArrowRight className="w-4 h-4 text-action" />
-          </button>
+          </Link>
         </motion.div>
       </motion.div>
 

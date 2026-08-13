@@ -1,4 +1,5 @@
 import { ArrowRight, Check } from 'lucide-react';
+import Link from 'next/link';
 import { Hero } from '../components/Hero';
 import { Features } from '../components/Features';
 import { DataFlow } from '../components/DataFlow';
@@ -14,10 +15,10 @@ export default function Home() {
       <header className="border-b border-shading px-4 py-4 md:px-8 flex items-center justify-between">
         <div className="font-mono font-bold text-lg tracking-tight">FUTRDESK_</div>
         <div className="flex items-center gap-6">
-          <a href="#" className="text-sm font-bold text-core hover:text-action transition-colors hidden sm:block">Login</a>
-          <button className="bg-action text-white text-sm font-bold px-4 py-2 rounded-sm hover:bg-core transition-colors">
+          <Link href="/login" className="text-sm font-bold text-core hover:text-action transition-colors hidden sm:block">Login</Link>
+          <Link href="/login" className="bg-action text-white text-sm font-bold px-4 py-2 rounded-sm hover:bg-core transition-colors">
             Jetzt starten
-          </button>
+          </Link>
         </div>
       </header>
 

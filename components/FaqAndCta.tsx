@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 const faqs = [
   {
@@ -101,11 +102,10 @@ export function FaqAndCta() {
               {/* Shiny Edge Box */}
               <div className="absolute -inset-[3px] rounded-xl bg-gradient-to-r from-action via-white/50 to-action opacity-70 group-hover:opacity-100 blur-[2px] transition duration-500 animate-pulse" />
               
-              {/* Button */}
-              <button className="relative bg-action text-white font-sans text-lg font-bold px-10 py-5 rounded-xl flex items-center justify-center gap-3 transition-transform duration-200 group-hover:scale-105 active:scale-95 shadow-2xl">
-                Kostenlos Account erstellen
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <Link href="/login" className="relative bg-action text-white font-sans text-lg font-bold px-10 py-5 rounded-xl flex items-center justify-center gap-3 transition-transform duration-200 group-hover:scale-105 active:scale-95 shadow-2xl">
+                Kostenlos ausprobieren
+                <ArrowRight className="w-5 h-5 text-white" />
+              </Link>
             </div>
           </div>
         </div>

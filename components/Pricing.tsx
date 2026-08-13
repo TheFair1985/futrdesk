@@ -5,6 +5,7 @@ import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 import { Check } from "lucide-react";
 import { MouseEvent } from "react";
 import { cn } from "../lib/utils";
+import Link from "next/link";
 
 const commonFeatures = [
   "E-Mail + WhatsApp + Telegram (inkl. Foto-Scanner & interaktivem Korrektur-Flow)",
@@ -124,17 +125,17 @@ function PricingCard({ tier, isYearly }: { tier: typeof pricingTiers[0], isYearl
         {tier.highlight ? (
           <div className="relative group/btn cursor-pointer mt-auto">
             <div className="absolute -inset-[2px] rounded-lg bg-gradient-to-r from-action via-white to-action opacity-70 group-hover/btn:opacity-100 blur-[2px] transition duration-500 animate-pulse" />
-            <button className="relative w-full bg-action text-white font-sans text-sm font-bold px-6 py-3 rounded-lg transition-transform duration-200 group-hover/btn:scale-[1.02]">
+            <Link href="/login" className="relative block text-center w-full bg-action text-white font-sans text-sm font-bold px-6 py-3 rounded-lg transition-transform duration-200 group-hover/btn:scale-[1.02]">
               {tier.buttonText}
-            </button>
+            </Link>
           </div>
         ) : (
-          <button className={cn(
-            "mt-auto w-full font-bold px-6 py-3 rounded-lg border transition-all duration-200",
+          <Link href="/login" className={cn(
+            "mt-auto block text-center w-full font-bold px-6 py-3 rounded-lg border transition-all duration-200",
             "bg-transparent border-[#bfc0c0] text-[#2d3142] hover:bg-[#2d3142] hover:text-white"
           )}>
             {tier.buttonText}
-          </button>
+          </Link>
         )}
       </div>
     </motion.div>
