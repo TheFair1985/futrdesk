@@ -131,7 +131,16 @@ export default function ArchiveClient({ initialInvoices }: { initialInvoices: an
   const pendingCount = filteredInvoices.filter(i => i.status === 'archived').length;
 
   const metrics = useMemo(() => {
-    if (filteredInvoices.length === 0) return null;
+    if (filteredInvoices.length === 0) {
+      return { 
+        topMonth: { name: '-', val: 0 }, 
+        flopMonth: { name: '-', val: 0 }, 
+        topCustomer: { name: '-', val: 0 }, 
+        flopCustomer: { name: '-', val: 0 }, 
+        topRegion: { name: '-', val: 0 }, 
+        flopRegion: { name: '-', val: 0 } 
+      };
+    }
 
     const monthTotals = new Map<number, number>();
     const customerTotals = new Map<string, number>();
