@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "../../utils/supabase/client";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { loginAction, signupAction } from "./actions";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,28 +22,22 @@ export default function LoginPage() {
     setError("");
     setSuccess("");
 
-    const supabase = createClient();
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
     
     if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
+      const res = await loginAction(formData);
+      if (res.error) {
         setError("Falsche E-Mail oder Passwort.");
       } else {
         router.push("/dashboard");
         router.refresh();
       }
     } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        setError(error.message);
+      const res = await signupAction(formData);
+      if (res.error) {
+        setError(res.error);
       } else {
         setSuccess("Account erstellt! Du kannst dich jetzt einloggen.");
         setIsLogin(true);
