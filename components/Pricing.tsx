@@ -23,7 +23,7 @@ const pricingTiers = [
     storage: "max. 1 GB Speicher",
     features: commonFeatures,
     highlight: false,
-    buttonText: "Kostenlos starten",
+    buttonText: "Starter aktivieren",
   },
   {
     name: "PRO",
@@ -34,7 +34,7 @@ const pricingTiers = [
     storage: "max. 3 GB Speicher",
     features: commonFeatures,
     highlight: true,
-    buttonText: "Pro testen",
+    buttonText: "Pro aktivieren",
   },
   {
     name: "BUSINESS",
@@ -44,7 +44,7 @@ const pricingTiers = [
     storage: "max. 5 GB Speicher",
     features: commonFeatures,
     highlight: false,
-    buttonText: "Flotte anfragen",
+    buttonText: "Business aktivieren",
   },
 ];
 

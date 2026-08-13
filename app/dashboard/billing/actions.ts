@@ -11,10 +11,14 @@ const VARIANTS: Record<string, string> = {
   STARTER: process.env.LS_VARIANT_STARTER || "12345",
   PRO: process.env.LS_VARIANT_PRO || "12346",
   BUSINESS: process.env.LS_VARIANT_BUSINESS || "12347",
+  ADDON_1: process.env.LS_VARIANT_ADDON_1 || "addon_1",
+  ADDON_20: process.env.LS_VARIANT_ADDON_20 || "addon_20",
+  ADDON_50: process.env.LS_VARIANT_ADDON_50 || "addon_50",
 };
 
 export async function generateCheckoutUrl(formData: FormData) {
   const tier = formData.get('tier') as string;
+  const quantity = formData.get('quantity') ? parseInt(formData.get('quantity') as string, 10) : 1;
   const variantId = VARIANTS[tier];
 
   if (!variantId) {
@@ -75,7 +79,7 @@ export async function generateCheckoutUrl(formData: FormData) {
   if (!response.ok) {
     // Sandbox / Test Fallback, falls keine API-Credentials gesetzt sind
     console.log('Checkout API Error. Using fallback test redirect.', await response.text());
-    redirect(`https://sandbox.lemonsqueezy.com/checkout/buy/${variantId}?checkout[custom][user_id]=${user.id}`);
+    redirect(`https://sandbox.lemonsqueezy.com/checkout/buy/${variantId}?checkout[custom][user_id]=${user.id}&checkout[quantity]=${quantity}`);
   }
 
   const data = await response.json();

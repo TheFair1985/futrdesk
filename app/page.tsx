@@ -16,7 +16,7 @@ export default function Home() {
         <div className="flex items-center gap-6">
           <a href="#" className="text-sm font-bold text-core hover:text-action transition-colors hidden sm:block">Login</a>
           <button className="bg-action text-white text-sm font-bold px-4 py-2 rounded-sm hover:bg-core transition-colors">
-            Kostenlos starten
+            Jetzt starten
           </button>
         </div>
       </header>

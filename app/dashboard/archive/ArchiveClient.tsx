@@ -240,7 +240,7 @@ export default function ArchiveClient({ initialInvoices }: { initialInvoices: an
               <span className="text-lg font-black text-core whitespace-nowrap">{formatCurrency(totalFilteredVolume)} €</span>
             </div>
             <div className="bg-white px-5 py-3 rounded-2xl border border-shading/10 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col justify-center flex-none min-w-[180px] md:min-w-[200px]">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-core/40 font-mono whitespace-nowrap">Export Pending</span>
+              <span className="text-[10px] uppercase font-bold tracking-widest text-core/40 font-mono whitespace-nowrap">Ausstehender Export</span>
               <span className={cn("text-lg font-black whitespace-nowrap", pendingCount === 0 ? "text-green-500" : "text-action")}>{pendingCount} Belege</span>
             </div>
             
