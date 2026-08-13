@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Shield, ArrowRight, Building2, Send, CreditCard, UploadCloud, Loader2, Zap } from "lucide-react";
 import { verifyVatId, saveOnboardingStep } from "../app/dashboard/onboardingActions";
 import { generateCheckoutUrl } from "../app/dashboard/billing/actions";
+import { cn } from "../lib/utils";
 
 export default function OnboardingWizard({ profile, email }: any) {
   const [step, setStep] = useState(1);
