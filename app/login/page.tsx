@@ -48,45 +48,44 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f111a] flex items-center justify-center p-4">
-      {/* Background Glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-action/20 blur-[120px] rounded-full" />
-      </div>
+    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-4 font-sans selection:bg-action/20 selection:text-action relative z-0">
+      
+      {/* Dashboard Style Background Grid */}
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#8080801a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full max-w-md z-10">
         
         {/* LOGO AREA */}
         <div className="text-center mb-10">
-          <Link href="/" className="inline-block text-2xl font-bold font-sans text-white tracking-tight">
-            FUTRDESK
+          <Link href="/" className="inline-block text-2xl font-bold font-sans text-core tracking-tight">
+            FUTRDESK_
           </Link>
-          <p className="text-white/50 font-mono text-sm mt-2 tracking-widest">
+          <p className="text-core/50 font-mono text-sm mt-2 tracking-widest uppercase">
             {isLogin ? "Anmeldung" : "Registrierung"}
           </p>
         </div>
 
         {/* LOGIN CARD */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
+        <div className="bg-white border border-[#bfc0c0] p-8 rounded-2xl shadow-xl shadow-black/5">
           
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white font-sans mb-2">
+            <h2 className="text-2xl font-bold text-core font-sans mb-2">
               {isLogin ? "Willkommen zurück" : "Neuen Account erstellen"}
             </h2>
-            <p className="text-white/60 text-sm">
+            <p className="text-core/70 text-sm leading-relaxed">
               {isLogin 
                 ? "Gib deine E-Mail und dein Passwort ein, um zum Dashboard zu gelangen." 
-                : "Erstelle dir jetzt einen kostenlosen Account, um Futrdesk zu nutzen."}
+                : "Erstelle dir jetzt einen Account, um Futrdesk zu nutzen."}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-xs font-bold text-white/50 uppercase tracking-widest font-mono">
+              <label htmlFor="email" className="text-xs font-bold text-core/60 uppercase tracking-widest font-mono">
                 E-Mail Adresse
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-core/40" />
                 <input
                   id="email"
                   type="email"
@@ -94,17 +93,17 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="firma@beispiel.de"
-                  className="w-full bg-white/5 border border-white/10 text-white placeholder:text-white/30 rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-action/50 focus:ring-1 focus:ring-action/50 transition-all font-mono text-sm"
+                  className="w-full bg-[#fafafa] border border-[#bfc0c0] text-core placeholder:text-core/30 rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-action focus:ring-1 focus:ring-action transition-all font-mono text-sm"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-xs font-bold text-white/50 uppercase tracking-widest font-mono">
+              <label htmlFor="password" className="text-xs font-bold text-core/60 uppercase tracking-widest font-mono">
                 Passwort
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-core/40" />
                 <input
                   id="password"
                   type="password"
@@ -112,19 +111,19 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/10 text-white placeholder:text-white/30 rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-action/50 focus:ring-1 focus:ring-action/50 transition-all font-mono text-sm"
+                  className="w-full bg-[#fafafa] border border-[#bfc0c0] text-core placeholder:text-core/30 rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-action focus:ring-1 focus:ring-action transition-all font-mono text-sm"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="text-red-400 text-xs font-bold bg-red-400/10 border border-red-400/20 p-3 rounded-lg">
+              <div className="text-red-700 text-xs font-bold bg-red-50 border border-red-200 p-3 rounded-lg">
                 {error}
               </div>
             )}
             
             {success && (
-              <div className="text-green-400 text-xs font-bold bg-green-400/10 border border-green-400/20 p-3 rounded-lg">
+              <div className="text-green-700 text-xs font-bold bg-green-50 border border-green-200 p-3 rounded-lg">
                 {success}
               </div>
             )}
@@ -132,24 +131,24 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-action hover:bg-action/90 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-action hover:bg-action/90 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  {isLogin ? "Einloggen" : "Registrieren"}
+                  {isLogin ? "Sicher einloggen" : "Account erstellen"}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-8 text-center pt-6 border-t border-shading">
             <button 
               type="button" 
               onClick={() => { setIsLogin(!isLogin); setError(""); setSuccess(""); }} 
-              className="text-white/50 hover:text-white text-sm transition-colors font-bold"
+              className="text-core/60 hover:text-action text-sm transition-colors font-bold"
             >
               {isLogin ? "Noch keinen Account? Hier registrieren" : "Bereits einen Account? Hier einloggen"}
             </button>
