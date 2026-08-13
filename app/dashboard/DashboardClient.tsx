@@ -100,6 +100,8 @@ export default function DashboardClient({ profile }: any) {
   const [mounted, setMounted] = useState(false);
   const [timeframe, setTimeframe] = useState<Timeframe>('jahr');
   const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [selectedMonth, setSelectedMonth] = useState<number>(7); // August as default for 2026 mock
+  const [selectedQuarter, setSelectedQuarter] = useState<number>(2); // Q3 as default
   const [customLogo, setCustomLogo] = useState<string | null>(null);
 
   useEffect(() => {
@@ -110,34 +112,33 @@ export default function DashboardClient({ profile }: any) {
   }, []);
 
   // FILTER LOGIC
-  const now = new Date(selectedYear, selectedYear === 2026 ? 7 : 11, selectedYear === 2026 ? 12 : 31);
-  
   const currentPeriodInvoices = useMemo(() => {
     if (!mounted) return [];
     return cachedMockInvoices.filter((inv) => {
       const d = new Date(inv.created_at);
-      if (timeframe === 'monat') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      if (timeframe === 'quartal') return Math.floor(d.getMonth() / 3) === Math.floor(now.getMonth() / 3) && d.getFullYear() === now.getFullYear();
-      if (timeframe === 'jahr') return d.getFullYear() === now.getFullYear();
+      if (timeframe === 'monat') return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+      if (timeframe === 'quartal') return Math.floor(d.getMonth() / 3) === selectedQuarter && d.getFullYear() === selectedYear;
+      if (timeframe === 'jahr') return d.getFullYear() === selectedYear;
       return true;
     });
-  }, [timeframe, selectedYear, mounted, now]);
+  }, [timeframe, selectedYear, selectedMonth, selectedQuarter, mounted]);
 
   const previousPeriodInvoices = useMemo(() => {
     if (!mounted) return [];
     return cachedMockInvoices.filter((inv) => {
       const d = new Date(inv.created_at);
-      if (timeframe === 'monat') return d.getMonth() === (now.getMonth() === 0 ? 11 : now.getMonth() - 1) && d.getFullYear() === (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
-      if (timeframe === 'quartal') {
-        const prevQ = Math.floor(now.getMonth() / 3) - 1;
-        const targetYear = prevQ < 0 ? now.getFullYear() - 1 : now.getFullYear();
-        const targetQ = prevQ < 0 ? 3 : prevQ;
-        return Math.floor(d.getMonth() / 3) === targetQ && d.getFullYear() === targetYear;
+      const targetYear = selectedYear - 1; // Wir vergleichen IMMER mit dem Vorjahr
+      
+      if (timeframe === 'monat') {
+         return d.getMonth() === selectedMonth && d.getFullYear() === targetYear;
       }
-      if (timeframe === 'jahr') return d.getFullYear() === now.getFullYear() - 1;
+      if (timeframe === 'quartal') {
+         return Math.floor(d.getMonth() / 3) === selectedQuarter && d.getFullYear() === targetYear;
+      }
+      if (timeframe === 'jahr') return d.getFullYear() === targetYear;
       return true;
     });
-  }, [timeframe, selectedYear, mounted, now]);
+  }, [timeframe, selectedYear, selectedMonth, selectedQuarter, mounted]);
 
   const currentBilled = currentPeriodInvoices.reduce((sum, inv) => sum + inv.gross_amount, 0);
   const previousBilled = previousPeriodInvoices.reduce((sum, inv) => sum + inv.gross_amount, 0);
@@ -196,27 +197,57 @@ export default function DashboardClient({ profile }: any) {
     return Object.values(map);
   }, [currentPeriodInvoices]);
 
+  const getISOWeek = (date: Date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
+  };
+
   const trendData = useMemo(() => {
     const data = [];
+    const monthNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+
     if (timeframe === 'jahr') {
       for (let i = 0; i < 12; i++) {
         const currMonth = currentPeriodInvoices.filter(inv => new Date(inv.created_at).getMonth() === i).reduce((s,i)=>s+i.gross_amount,0);
         const prevMonth = previousPeriodInvoices.filter(inv => new Date(inv.created_at).getMonth() === i).reduce((s,i)=>s+i.gross_amount,0);
-        const monthNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-        data.push({ name: monthNames[i], Aktuell: currMonth, Vorher: prevMonth });
+        
+        // Da die Datenlage für 2026 nur bis August (Index 7) geht, setzen wir spätere Monate auf null
+        const isFuture = selectedYear === 2026 && i > 7;
+        data.push({ name: monthNames[i], Aktuell: isFuture ? null : currMonth, Vorjahr: prevMonth });
       }
     } else if (timeframe === 'monat') {
-      for(let i=0; i<4; i++) {
-        data.push({ name: `Woche ${i+1}`, Aktuell: currentBilled * (0.2 + (i*0.05)), Vorher: previousBilled * 0.25 });
+      const weeksInMonth = new Set<number>();
+      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+      for(let day = 1; day <= daysInMonth; day++) {
+         weeksInMonth.add(getISOWeek(new Date(selectedYear, selectedMonth, day)));
       }
+      
+      const sortedWeeks = Array.from(weeksInMonth).sort((a,b)=>a-b);
+      
+      sortedWeeks.forEach(kw => {
+        const currWeek = currentPeriodInvoices.filter(inv => getISOWeek(new Date(inv.created_at)) === kw).reduce((s,i)=>s+i.gross_amount,0);
+        const prevWeek = previousPeriodInvoices.filter(inv => getISOWeek(new Date(inv.created_at)) === kw).reduce((s,i)=>s+i.gross_amount,0);
+        
+        // Mock data ends on August 12 2026, which is KW 33
+        const isFuture = selectedYear === 2026 && kw > 33;
+        data.push({ name: `KW ${kw}`, Aktuell: isFuture ? null : currWeek, Vorjahr: prevWeek });
+      });
     } else {
-      data.push({ name: '1', Aktuell: currentBilled * 0.45, Vorher: previousBilled * 0.25 });
-      data.push({ name: '2', Aktuell: currentBilled * 0.45, Vorher: previousBilled * 0.25 });
-      data.push({ name: '3', Aktuell: currentBilled * 0.10, Vorher: previousBilled * 0.25 });
-      data.push({ name: '4', Aktuell: null, Vorher: previousBilled * 0.25 });
+      const startMonth = selectedQuarter * 3;
+      for(let i=0; i<3; i++) {
+        const mIdx = startMonth + i;
+        const currMonth = currentPeriodInvoices.filter(inv => new Date(inv.created_at).getMonth() === mIdx).reduce((s,i)=>s+i.gross_amount,0);
+        const prevMonth = previousPeriodInvoices.filter(inv => new Date(inv.created_at).getMonth() === mIdx).reduce((s,i)=>s+i.gross_amount,0);
+        
+        const isFuture = selectedYear === 2026 && mIdx > 7;
+        data.push({ name: monthNames[mIdx], Aktuell: isFuture ? null : currMonth, Vorjahr: prevMonth });
+      }
     }
     return data;
-  }, [timeframe, currentPeriodInvoices, previousPeriodInvoices, currentBilled, previousBilled]);
+  }, [timeframe, currentPeriodInvoices, previousPeriodInvoices, selectedYear, selectedMonth, selectedQuarter]);
   const flowCheckData = [
     { month: `August ${String(selectedYear).slice(2)}`, generated: 142, zugferd: 139, clientSent: 139, taxSent: false, zipDays: 19, status: 'attention', desc: '3 Belege fehlerhaft. Stammdaten unvollständig (Steuernummer fehlt). Bitte manuell korrigieren.' },
     { month: `Juli ${String(selectedYear).slice(2)}`, generated: 450, zugferd: 450, clientSent: 450, taxSent: true, zipDays: 0, status: 'completed', desc: 'Sammel-Export erfolgreich an DATEV übermittelt. Zyklus GoBD-konform geschlossen.' },
@@ -285,7 +316,7 @@ export default function DashboardClient({ profile }: any) {
               )}>
                 <div className="flex items-center gap-1">
                   {growth > 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                  {Math.abs(growth).toFixed(1)}% vs. {timeframe === 'monat' ? 'Vormonat' : 'Vorjahr'}
+                  {Math.abs(growth).toFixed(1)}% vs. {selectedYear - 1}
                 </div>
               </div>
             </div>
@@ -294,7 +325,7 @@ export default function DashboardClient({ profile }: any) {
           <div className="flex flex-col gap-1 bg-gray-50 p-4 rounded-2xl border border-shading/10 w-fit">
             <span className="text-xs text-core/60 font-bold">Summe aller Ausgangsrechnungen (Netto + MwSt) im ausgewählten Zeitraum.</span>
             <div className="flex items-center gap-4 text-xs font-mono">
-              <span className="text-core/40">Vergleichswert Vorperiode: <span className="font-bold text-core">{previousBilled.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span></span>
+              <span className="text-core/40">Vergleichswert {selectedYear - 1}: <span className="font-bold text-core">{previousBilled.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span></span>
               {selectedYear === 2026 && (
                 <>
                   <div className="w-1 h-1 bg-shading/20 rounded-full" />
@@ -312,17 +343,17 @@ export default function DashboardClient({ profile }: any) {
           
           {/* Centered Logo above Toggle */}
           <div 
-            className="relative w-[240px] h-[240px] my-auto opacity-60 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
+            className="relative w-[240px] h-[240px] my-auto -translate-y-4 opacity-100 mix-blend-multiply cursor-pointer group transition-transform hover:scale-105"
             onClick={() => document.getElementById('logo-upload')?.click()}
           >
-            <Image src={customLogo || "/image.png"} fill className="object-contain object-center" alt="Company Logo" />
+            <Image src={customLogo || "/image.png"} fill sizes="240px" className="object-contain object-center" alt="Company Logo" />
             <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm text-center p-2">
               <span className="text-core font-bold text-xs mb-1">Logo ändern</span>
               <span className="text-core/60 text-[8px] font-medium leading-tight">Format 1:1<br/>Max. 5 MB</span>
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-3">
             <div className="flex items-center bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl shadow-inner border border-shading/10">
               {(['monat', 'quartal', 'jahr'] as Timeframe[]).map((t) => (
                 <button
@@ -340,6 +371,52 @@ export default function DashboardClient({ profile }: any) {
                 </button>
               ))}
             </div>
+
+            <AnimatePresence mode="wait">
+              {timeframe === 'monat' && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto' }}
+                  exit={{ opacity: 0, y: -10, height: 0 }}
+                  className="grid grid-cols-6 gap-1 bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl shadow-sm border border-shading/5 w-full"
+                >
+                  {["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"].map((m, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedMonth(idx)}
+                      className={cn(
+                        "px-2 py-1.5 text-xs font-bold rounded-lg transition-all text-center",
+                        selectedMonth === idx ? "bg-core text-white shadow-md" : "text-core/50 hover:text-core hover:bg-gray-50"
+                      )}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+
+              {timeframe === 'quartal' && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto' }}
+                  exit={{ opacity: 0, y: -10, height: 0 }}
+                  className="grid grid-cols-4 gap-1 bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl shadow-sm border border-shading/5 w-full"
+                >
+                  {["Q1", "Q2", "Q3", "Q4"].map((q, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedQuarter(idx)}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-center",
+                        selectedQuarter === idx ? "bg-core text-white shadow-md" : "text-core/50 hover:text-core hover:bg-gray-50"
+                      )}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </motion.div>
@@ -362,7 +439,7 @@ export default function DashboardClient({ profile }: any) {
           </div>
 
           <div className="bg-gray-50 rounded-xl p-3 mb-6 text-xs text-core/60 font-medium">
-            Diese Rangliste zeigt die umsatzstärksten Kunden im gewählten Zeitraum und ihr Wachstum zur Vorperiode.
+            Diese Rangliste zeigt die umsatzstärksten Kunden im gewählten Zeitraum und ihr Wachstum im Vergleich zum selben Zeitraum in {selectedYear - 1}.
           </div>
 
           <div className="flex flex-col gap-6 flex-1">
@@ -405,12 +482,12 @@ export default function DashboardClient({ profile }: any) {
               </div>
               <div>
                 <h3 className="font-bold text-core text-lg">Umsatz-Entwicklung</h3>
-                <p className="text-xs text-core/50 font-mono">Aktueller Zeitraum vs. Vorperiode (inkl. Saisonalität)</p>
+                <p className="text-xs text-core/50 font-mono">{selectedYear} vs. {selectedYear - 1} (gleicher Zeitraum)</p>
               </div>
             </div>
             <div className="flex items-center gap-4 text-xs font-bold font-mono bg-gray-50 px-4 py-2 rounded-xl border border-shading/10">
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-action" /> Aktuell ({selectedYear})</div>
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-core/20" /> Vorher</div>
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-action" /> {selectedYear}</div>
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-core/20" /> {selectedYear - 1}</div>
             </div>
           </div>
           
@@ -427,15 +504,14 @@ export default function DashboardClient({ profile }: any) {
                 <Tooltip 
                   cursor={{ fill: 'transparent' }} 
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontWeight: 'bold' }}
-                  formatter={(value: number) => [value.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}), 'Fakturierter Umsatz']}
+                  formatter={(value: number, name: string) => [value.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}), name === 'Aktuell' ? `${selectedYear}` : `${selectedYear - 1}`]}
                   labelFormatter={(label) => {
                     if (timeframe === 'jahr') return `Monat ${label}`;
-                    if (timeframe === 'monat') return `Kalenderwoche ${label}`;
-                    return `Quartal ${label}`;
+                    return `${label}`;
                   }}
                 />
-                <Area type="monotone" dataKey="Vorher" stroke="#2d3142" strokeOpacity={0.2} strokeWidth={2} strokeDasharray="5 5" fill="none" />
-                <Area type="monotone" dataKey="Aktuell" stroke="#ef8354" strokeWidth={4} fillOpacity={1} fill="url(#colorCurrent)" />
+                <Area type="monotone" dataKey="Vorjahr" stroke="#2d3142" strokeOpacity={0.2} strokeWidth={2} strokeDasharray="5 5" fill="none" />
+                <Area type="monotone" dataKey="Aktuell" stroke="#ef8354" strokeWidth={4} fillOpacity={1} fill="url(#colorCurrent)" connectNulls={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -484,7 +560,7 @@ export default function DashboardClient({ profile }: any) {
             {/* User Prompt Mock */}
             <div className="flex items-start gap-4">
               <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden relative shadow-sm">
-                <Image src={customLogo || "/image.png"} fill className="object-contain p-1 mix-blend-multiply scale-90" alt="User" />
+                <Image src={customLogo || "/image.png"} fill sizes="32px" className="object-contain p-1 mix-blend-multiply scale-90" alt="User" />
               </div>
               <div className="pt-1.5">
                 <p className="text-sm font-semibold text-white/90">Generiere einen aktuellen Performance-Bericht inkl. saisonaler Effekte.</p>

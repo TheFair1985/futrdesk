@@ -17,15 +17,50 @@ export default async function BillingPage() {
   
   const { data: { user } } = await supabase.auth.getUser();
   
-  let profile = { tier: 'STARTER', storage_used_bytes: 0 };
+  let profile = { tier: 'STARTER', storage_used_bytes: 0, futrdesk_invoice_email: '', cost_center: '', department: '' };
   if (user) {
-    const { data } = await supabase.from('users').select('tier, storage_used_bytes').eq('id', user.id).single();
+    const { data } = await supabase.from('users').select('tier, storage_used_bytes, futrdesk_invoice_email, cost_center, department').eq('id', user.id).single();
     if (data) {
       profile = {
         tier: data.tier || 'STARTER',
-        storage_used_bytes: data.storage_used_bytes || 0
+        storage_used_bytes: data.storage_used_bytes || 0,
+        futrdesk_invoice_email: data.futrdesk_invoice_email || '',
+        cost_center: data.cost_center || '',
+        department: data.department || ''
       };
     }
+  }
+
+  async function updateBilling(formData: FormData) {
+    "use server"
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll() },
+          setAll(cookiesToSet) {
+             try {
+               cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+               )
+             } catch(err) {}
+          }
+        }
+      }
+    );
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    await supabase.from('users').update({
+      futrdesk_invoice_email: formData.get('futrdesk_invoice_email'),
+      cost_center: formData.get('cost_center'),
+      department: formData.get('department')
+    }).eq('id', user.id);
+    
+    revalidatePath('/dashboard/billing');
   }
 
   // Calculate storage metrics
@@ -41,12 +76,8 @@ export default async function BillingPage() {
       
       {/* HEADER */}
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold font-sans text-core tracking-tight">
-          Billing & Subscription
-        </h1>
-        <p className="text-core/70 font-sans text-lg">
-          Verwalte dein Abonnement, deinen Speicherplatz und Rechnungen.
-        </p>
+        <h1 className="text-3xl font-black text-core tracking-tight uppercase">Abrechnung</h1>
+        <p className="text-core/50 font-mono text-xs mt-1">Dein Futrdesk-Abo und Zustellung unserer Rechnungen</p>
       </header>
 
       {/* CURRENT USAGE BENTO */}
@@ -91,6 +122,77 @@ export default async function BillingPage() {
         </div>
 
       </div>
+
+      {/* FUTRDESK INVOICE ROUTING FORM */}
+      <form action={updateBilling} className="flex flex-col mt-4">
+        <section className="bg-white border border-shading/10 rounded-3xl p-8 shadow-[0_2px_20px_rgb(0,0,0,0.02)]">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-core/50">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-core">Futrdesk-Rechnungen empfangen</h2>
+              <p className="text-xs font-mono text-core/40">Zustellung und Metadaten für unsere Abrechnung an dich</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-core/60 mb-8 leading-relaxed">
+            Hier kannst du einstellen, an welche E-Mail-Adresse du die monatlichen Futrdesk-Abo-Rechnungen erhalten möchtest (z.B. direkt an deine Buchhaltung). Zusätzlich kannst du eine Kostenstelle oder Abteilung hinterlegen, die wir automatisch auf unseren Rechnungen an dich ausweisen, um dir die interne Zuordnung zu erleichtern.
+          </p>
+          
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">
+                Empfänger E-Mail für Futrdesk-Rechnungen
+              </label>
+              <input 
+                name="futrdesk_invoice_email"
+                type="email"
+                defaultValue={profile.futrdesk_invoice_email || user?.email || ""}
+                placeholder="buchhaltung@musterfirma.de"
+                className="w-full bg-gray-50 border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 focus:ring-2 focus:ring-action/20 transition-all" 
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+              <div className="flex flex-col gap-2 relative">
+                <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">
+                  Abteilung (Optional)
+                </label>
+                <input 
+                  name="department"
+                  type="text"
+                  defaultValue={profile.department || ""}
+                  placeholder="z.B. IT-Services"
+                  className="w-full bg-gray-50 border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 focus:ring-2 focus:ring-action/20 transition-all" 
+                />
+              </div>
+              
+              <div className="flex flex-col gap-2 relative">
+                <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">
+                  Kostenstelle (Optional)
+                </label>
+                <input 
+                  name="cost_center"
+                  type="text"
+                  defaultValue={profile.cost_center || ""}
+                  placeholder="z.B. KS-4029"
+                  className="w-full bg-gray-50 border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 focus:ring-2 focus:ring-action/20 transition-all" 
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end mt-4">
+              <button 
+                type="submit"
+                className="bg-core text-white hover:bg-core/90 transition-colors font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_20px_rgb(0,0,0,0.1)]"
+              >
+                Abrechnungsdaten speichern
+              </button>
+            </div>
+          </div>
+        </section>
+      </form>
 
       {/* PRICING MATRIX */}
       <div className="mt-8">
