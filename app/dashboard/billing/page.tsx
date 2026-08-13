@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { CreditCard, HardDrive, Zap, Check, ArrowRight } from "lucide-react"
+import { revalidatePath } from "next/cache"
+import { CreditCard, HardDrive, Zap, Check, ArrowRight, Layers } from "lucide-react"
 import { generateCheckoutUrl } from "./actions"
 
 export default async function BillingPage() {
@@ -198,94 +199,176 @@ export default async function BillingPage() {
       <div className="mt-8">
         <div className="flex items-center gap-3 mb-8">
           <Zap className="w-5 h-5 text-core" />
-          <h2 className="font-sans font-bold text-2xl text-core">Pläne & Upgrades</h2>
+          <h2 className="font-sans font-bold text-2xl text-core">Tarife & Optionen</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* STARTER */}
-          <div className={`relative flex flex-col bg-white border ${profile.tier === 'STARTER' ? 'border-[#bfc0c0]' : 'border-transparent shadow-sm'} p-8 rounded-2xl`}>
+          <div className={`relative flex flex-col bg-white border ${profile.tier === 'STARTER' ? 'border-[#bfc0c0]' : 'border-shading/10 shadow-sm'} p-8 rounded-2xl`}>
             {profile.tier === 'STARTER' && (
               <div className="absolute top-0 right-0 bg-gray-100 text-core/60 font-mono text-[10px] uppercase font-bold px-3 py-1 rounded-bl-lg rounded-tr-2xl border-l border-b border-[#bfc0c0]">
                 Dein Plan
               </div>
             )}
-            <h3 className="font-mono text-lg font-bold text-core uppercase tracking-widest mb-2">Starter</h3>
+            <h3 className="font-mono text-sm font-bold text-core uppercase tracking-widest mb-4">Starter</h3>
             <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-bold font-sans text-core">29€</span>
+              <span className="text-5xl font-bold font-sans text-core">19,99€</span>
               <span className="text-sm text-core/60 font-sans">/ Monat</span>
             </div>
-            <ul className="flex flex-col gap-3 mb-8 flex-1">
-              <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> WhatsApp Ingest</li>
-              <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> 1 GB Speicher (ZIP Export)</li>
-              <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> Llama-3 Extraktion</li>
+            
+            <div className="mb-8">
+              <div className="font-bold text-core mb-1 text-sm">25 Rechnungen / Monat</div>
+              <div className="text-xs text-core/60">max. 1 GB Speicher</div>
+            </div>
+
+            <ul className="flex flex-col gap-4 mb-8 flex-1">
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> E-Mail + WhatsApp + Telegram (inkl. Foto-Scanner & interaktivem Korrektur-Flow)</li>
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> ZUGFeRD PDF-Design (inklusive aller Pflichtangaben)</li>
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> Kundengedächtnis (Das System merkt sich Kunden und Adressen für Autovervollständigung)</li>
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> Monatlicher Auto-Export (Standard: ZIP mit PDFs & CSV an Buchhaltung/Steuerberater)</li>
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> Fail-Safe bei Limit-Überschreitung oder Accountlöschung (Automatischer Datenexport als ZIP)</li>
             </ul>
             <form action={generateCheckoutUrl}>
               <input type="hidden" name="tier" value="STARTER" />
-              <button disabled={profile.tier === 'STARTER'} className={`w-full py-3 rounded-xl font-bold transition-colors ${profile.tier === 'STARTER' ? 'bg-gray-100 text-core/40 cursor-not-allowed' : 'bg-gray-100 text-core hover:bg-gray-200 border border-[#bfc0c0]'}`}>
-                {profile.tier === 'STARTER' ? 'Aktuell' : 'Downgrade auf Starter'}
+              <button disabled={profile.tier === 'STARTER'} className={`w-full py-4 rounded-xl font-bold transition-colors border ${profile.tier === 'STARTER' ? 'bg-gray-100 text-core/40 cursor-not-allowed border-transparent' : 'bg-white text-core hover:bg-gray-50 border-shading/20 shadow-sm'}`}>
+                {profile.tier === 'STARTER' ? 'Dein aktueller Tarif' : 'Starter aktivieren'}
               </button>
             </form>
           </div>
 
           {/* PRO */}
-          <div className={`relative flex flex-col bg-white border ${profile.tier === 'PRO' ? 'border-action shadow-lg scale-100 md:scale-[1.02] z-10' : 'border-action shadow-md'} p-8 rounded-2xl`}>
+          <div className={`relative flex flex-col bg-core border ${profile.tier === 'PRO' ? 'border-action shadow-lg scale-100 md:scale-[1.02] z-10' : 'border-core shadow-xl scale-100 md:scale-[1.02] z-10'} p-8 rounded-2xl`}>
             {profile.tier === 'PRO' && (
               <div className="absolute top-0 right-0 bg-action text-white font-mono text-[10px] uppercase font-bold px-3 py-1 rounded-bl-lg rounded-tr-2xl">
                 Dein Plan
               </div>
             )}
             {profile.tier !== 'PRO' && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-action text-white font-mono text-[10px] uppercase font-bold px-4 py-1 rounded-full shadow-sm">
-                Empfohlen
+              <div className="absolute top-8 right-8 bg-[#F48F65] text-white font-mono text-[10px] uppercase font-bold px-3 py-1 rounded-md">
+                Empfehlung
               </div>
             )}
-            <h3 className="font-mono text-lg font-bold text-core uppercase tracking-widest mb-2">Pro</h3>
+            <h3 className="font-mono text-sm font-bold text-[#F48F65] uppercase tracking-widest mb-4">Pro</h3>
             <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-bold font-sans text-core">79€</span>
-              <span className="text-sm text-core/60 font-sans">/ Monat</span>
+              <span className="text-5xl font-bold font-sans text-white">49,99€</span>
+              <span className="text-sm text-white/60 font-sans">/ Monat</span>
             </div>
-            <ul className="flex flex-col gap-3 mb-8 flex-1">
-              <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-action shrink-0 mt-0.5" /> Alle Starter Features</li>
-              <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-action shrink-0 mt-0.5" /> Multi-Channel (Mail, Telegram)</li>
-              <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-action shrink-0 mt-0.5" /> 3 GB Speicher (GoBD 10J)</li>
-              <li className="flex items-start gap-2 text-sm text-core/80"><Check className="w-4 h-4 text-action shrink-0 mt-0.5" /> Automatischer Export</li>
+            
+            <div className="mb-8">
+              <div className="font-bold text-white mb-1 text-sm">75 Rechnungen / Monat</div>
+              <div className="text-xs text-white/60">max. 3 GB Speicher</div>
+            </div>
+
+            <ul className="flex flex-col gap-4 mb-8 flex-1">
+              <li className="flex items-start gap-3 text-sm text-white/80 leading-relaxed"><Check className="w-4 h-4 text-[#F48F65] shrink-0 mt-0.5" /> E-Mail + WhatsApp + Telegram (inkl. Foto-Scanner & interaktivem Korrektur-Flow)</li>
+              <li className="flex items-start gap-3 text-sm text-white/80 leading-relaxed"><Check className="w-4 h-4 text-[#F48F65] shrink-0 mt-0.5" /> ZUGFeRD PDF-Design (inklusive aller Pflichtangaben)</li>
+              <li className="flex items-start gap-3 text-sm text-white/80 leading-relaxed"><Check className="w-4 h-4 text-[#F48F65] shrink-0 mt-0.5" /> Kundengedächtnis (Das System merkt sich Kunden und Adressen für Autovervollständigung)</li>
+              <li className="flex items-start gap-3 text-sm text-white/80 leading-relaxed"><Check className="w-4 h-4 text-[#F48F65] shrink-0 mt-0.5" /> Monatlicher Auto-Export (Standard: ZIP mit PDFs & CSV an Buchhaltung/Steuerberater)</li>
+              <li className="flex items-start gap-3 text-sm text-white/80 leading-relaxed"><Check className="w-4 h-4 text-[#F48F65] shrink-0 mt-0.5" /> Fail-Safe bei Limit-Überschreitung oder Accountlöschung (Automatischer Datenexport als ZIP)</li>
             </ul>
             <form action={generateCheckoutUrl}>
               <input type="hidden" name="tier" value="PRO" />
-              <button disabled={profile.tier === 'PRO'} className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${profile.tier === 'PRO' ? 'bg-action text-white cursor-not-allowed opacity-90' : 'bg-action hover:bg-action/90 text-white shadow-md'}`}>
-                {profile.tier === 'PRO' ? 'Aktuell' : 'Plan wechseln'}
-                {profile.tier !== 'PRO' && <ArrowRight className="w-4 h-4" />}
+              <button disabled={profile.tier === 'PRO'} className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${profile.tier === 'PRO' ? 'bg-[#F48F65]/50 text-white cursor-not-allowed opacity-90' : 'bg-[#F48F65] hover:bg-[#F48F65]/90 text-white shadow-md'}`}>
+                {profile.tier === 'PRO' ? 'Dein aktueller Tarif' : 'Pro aktivieren'}
               </button>
             </form>
           </div>
 
           {/* BUSINESS */}
-          <div className={`relative flex flex-col bg-core border ${profile.tier === 'BUSINESS' ? 'border-action shadow-lg' : 'border-core shadow-md'} p-8 rounded-2xl`}>
+          <div className={`relative flex flex-col bg-white border ${profile.tier === 'BUSINESS' ? 'border-[#bfc0c0]' : 'border-shading/10 shadow-sm'} p-8 rounded-2xl`}>
             {profile.tier === 'BUSINESS' && (
-              <div className="absolute top-0 right-0 bg-action text-white font-mono text-[10px] uppercase font-bold px-3 py-1 rounded-bl-lg rounded-tr-2xl">
+              <div className="absolute top-0 right-0 bg-gray-100 text-core/60 font-mono text-[10px] uppercase font-bold px-3 py-1 rounded-bl-lg rounded-tr-2xl border-l border-b border-[#bfc0c0]">
                 Dein Plan
               </div>
             )}
-            <h3 className="font-mono text-lg font-bold text-white uppercase tracking-widest mb-2">Business</h3>
+            <h3 className="font-mono text-sm font-bold text-core uppercase tracking-widest mb-4">Business</h3>
             <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-bold font-sans text-white">199€</span>
-              <span className="text-sm text-white/60 font-sans">/ Monat</span>
+              <span className="text-5xl font-bold font-sans text-core">99,99€</span>
+              <span className="text-sm text-core/60 font-sans">/ Monat</span>
             </div>
-            <ul className="flex flex-col gap-3 mb-8 flex-1">
-              <li className="flex items-start gap-2 text-sm text-white/80"><Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" /> Unbegrenzte Channels</li>
-              <li className="flex items-start gap-2 text-sm text-white/80"><Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" /> 5 GB Speicher</li>
-              <li className="flex items-start gap-2 text-sm text-white/80"><Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" /> Eigene Inbound Domain</li>
-              <li className="flex items-start gap-2 text-sm text-white/80"><Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" /> API Zugriff</li>
+            
+            <div className="mb-8">
+              <div className="font-bold text-core mb-1 text-sm">150 Rechnungen / Monat</div>
+              <div className="text-xs text-core/60">max. 5 GB Speicher</div>
+            </div>
+
+            <ul className="flex flex-col gap-4 mb-8 flex-1">
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> E-Mail + WhatsApp + Telegram (inkl. Foto-Scanner & interaktivem Korrektur-Flow)</li>
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> ZUGFeRD PDF-Design (inklusive aller Pflichtangaben)</li>
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> Kundengedächtnis (Das System merkt sich Kunden und Adressen für Autovervollständigung)</li>
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> Monatlicher Auto-Export (Standard: ZIP mit PDFs & CSV an Buchhaltung/Steuerberater)</li>
+              <li className="flex items-start gap-3 text-sm text-core/80 leading-relaxed"><Check className="w-4 h-4 text-core shrink-0 mt-0.5" /> Fail-Safe bei Limit-Überschreitung oder Accountlöschung (Automatischer Datenexport als ZIP)</li>
             </ul>
             <form action={generateCheckoutUrl}>
               <input type="hidden" name="tier" value="BUSINESS" />
-              <button disabled={profile.tier === 'BUSINESS'} className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${profile.tier === 'BUSINESS' ? 'bg-white/10 text-white cursor-not-allowed' : 'bg-white text-core hover:bg-gray-100 shadow-md'}`}>
-                {profile.tier === 'BUSINESS' ? 'Aktuell' : 'Enterprise anfragen'}
+              <button disabled={profile.tier === 'BUSINESS'} className={`w-full py-4 rounded-xl font-bold transition-colors border ${profile.tier === 'BUSINESS' ? 'bg-gray-100 text-core/40 cursor-not-allowed border-transparent' : 'bg-white text-core hover:bg-gray-50 border-shading/20 shadow-sm'}`}>
+                {profile.tier === 'BUSINESS' ? 'Dein aktueller Tarif' : 'Business aktivieren'}
               </button>
             </form>
           </div>
 
+        </div>
+      </div>
+
+      {/* ADD-ONS */}
+      <div className="mt-12 mb-20">
+        <div className="flex items-center gap-3 mb-8">
+          <Layers className="w-5 h-5 text-core" />
+          <h2 className="font-sans font-bold text-2xl text-core">Zusätzliches Volumen</h2>
+        </div>
+        
+        <div className="bg-white border border-shading/10 rounded-2xl shadow-sm overflow-hidden w-full">
+          <div className="bg-core px-6 py-4 flex items-center justify-between">
+            <h3 className="font-mono text-xs md:text-sm font-bold text-white uppercase tracking-widest">Volumen überschritten?</h3>
+            <span className="bg-[#F48F65]/20 text-[#F48F65] px-3 py-1 text-[10px] font-bold uppercase rounded-md tracking-widest">Variabel Wählbar</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-shading/10">
+            {/* 1 Invoice */}
+            <div className="p-8 flex flex-col items-center text-center">
+              <span className="text-4xl font-bold font-sans text-core mb-2">1,99€</span>
+              <span className="text-sm font-bold text-core mb-1">Einzelrechnung</span>
+              <span className="text-xs text-core/60 mb-6 flex-1">Flexibel von 1-19 Rechnungen</span>
+              <form action={generateCheckoutUrl} className="w-full flex gap-2">
+                <input type="hidden" name="tier" value="ADDON_1" />
+                <select name="quantity" className="bg-gray-50 border border-shading/10 rounded-xl px-2 text-center text-sm font-bold text-core focus:outline-none focus:border-action/50 cursor-pointer w-20">
+                  {Array.from({ length: 19 }, (_, i) => (
+                    <option key={i+1} value={i+1}>{i+1}</option>
+                  ))}
+                </select>
+                <button className="flex-1 py-3 rounded-xl font-bold text-sm bg-gray-100 hover:bg-gray-200 text-core transition-colors">
+                  Kaufen
+                </button>
+              </form>
+            </div>
+            
+            {/* 20 Invoices */}
+            <div className="p-8 flex flex-col items-center text-center">
+              <span className="text-4xl font-bold font-sans text-core mb-2">29,99€</span>
+              <span className="text-sm font-bold text-core mb-1">20 Rechnungen</span>
+              <span className="text-xs text-core/60 mb-6 flex-1 line-through decoration-action/50 decoration-2">Statt 39,80 €</span>
+              <form action={generateCheckoutUrl} className="w-full">
+                <input type="hidden" name="tier" value="ADDON_20" />
+                <button className="w-full py-3 rounded-xl font-bold text-sm bg-core hover:bg-core/90 text-white shadow-md transition-colors">
+                  Paket buchen
+                </button>
+              </form>
+            </div>
+            
+            {/* 50 Invoices */}
+            <div className="p-8 flex flex-col items-center text-center">
+              <span className="text-4xl font-bold font-sans text-core mb-2">79,99€</span>
+              <span className="text-sm font-bold text-core mb-1">50 Rechnungen</span>
+              <span className="text-xs text-core/60 mb-6 flex-1 line-through decoration-action/50 decoration-2">Statt 99,50 €</span>
+              <form action={generateCheckoutUrl} className="w-full">
+                <input type="hidden" name="tier" value="ADDON_50" />
+                <button className="w-full py-3 rounded-xl font-bold text-sm bg-core hover:bg-core/90 text-white shadow-md transition-colors">
+                  Paket buchen
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
 
