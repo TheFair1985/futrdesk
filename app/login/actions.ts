@@ -3,37 +3,45 @@
 import { createClient } from "../../lib/supabase/server";
 
 export async function loginAction(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  try {
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-  const supabase = await createClient();
+    const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || "Unknown error occurred" };
   }
-
-  return { success: true };
 }
 
 export async function signupAction(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  try {
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-  const supabase = await createClient();
+    const supabase = await createClient();
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || "Unknown error occurred" };
   }
-
-  return { success: true };
 }
