@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import DashboardLayoutClient from "./DashboardLayoutClient"
 import OnboardingWizard from "../../components/OnboardingWizard"
 
@@ -21,8 +22,8 @@ export default async function DashboardLayout({
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    // Should be handled by middleware, but just in case
-    return <div className="p-10 font-mono text-xs">Unauthenticated</div>;
+    // Redirect to login if they have a stale session or are unauthenticated
+    redirect('/login');
   }
 
   const { data: publicProfile } = await supabase.from('users').select('*').eq('id', user.id).single();
