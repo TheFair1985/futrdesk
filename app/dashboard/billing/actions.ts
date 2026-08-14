@@ -1,7 +1,7 @@
 "use server"
 
 import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 
 const LEMON_SQUEEZY_STORE_ID = "441519";
@@ -27,6 +27,11 @@ export async function generateCheckoutUrl(formData: FormData) {
   }
 
   const cookieStore = await cookies();
+  const headersList = await headers();
+  const host = headersList.get('host') || 'futrdesk.com';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  const baseUrl = `${protocol}://${host}`;
+
   const supabase = createServerClient(
     (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PROJECT_URL)!,
     (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY)!,
@@ -53,6 +58,9 @@ export async function generateCheckoutUrl(formData: FormData) {
       data: {
         type: 'checkouts',
         attributes: {
+          product_options: {
+            redirect_url: `${baseUrl}/dashboard?payment=success`
+          },
           checkout_data: {
             test_mode: true,
             custom: {
