@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, Suspense } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Shield, ArrowRight, Building2, Send, CreditCard, UploadCloud, Loader2, Zap, RefreshCw } from "lucide-react";
 import { verifyVatId, saveOnboardingStep } from "../app/dashboard/onboardingActions";
@@ -122,9 +123,9 @@ function OnboardingContent({ profile, email }: any) {
 
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center py-20 relative">
         <div className="mb-12 text-center">
-          <span className="font-mono text-2xl font-bold tracking-tighter text-core">
-            FUTRDESK<span className="text-action">.</span>
-          </span>
+          <div className="text-xl font-bold font-sans tracking-tight mb-8 text-core flex justify-center">
+            <Image src="/logo.png" alt="Futrdesk Logo" width={150} height={40} priority />
+          </div>
         </div>
 
         <AnimatePresence mode="wait">

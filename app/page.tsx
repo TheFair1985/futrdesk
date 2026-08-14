@@ -1,5 +1,6 @@
-import { ArrowRight, Check } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowRight, FileCheck2, Zap, Shield, ChevronRight, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 import { Hero } from '../components/Hero';
 import { Features } from '../components/Features';
 import { DataFlow } from '../components/DataFlow';
@@ -13,7 +14,9 @@ export default function Home() {
     <div className="min-h-screen flex flex-col selection:bg-action selection:text-white">
       {/* HEADER */}
       <header className="border-b border-shading px-4 py-4 md:px-8 flex items-center justify-between">
-        <div className="font-mono font-bold text-lg tracking-tight">FUTRDESK_</div>
+        <div className="flex items-center">
+          <Image src="/logo.png" alt="Futrdesk Logo" width={150} height={40} priority />
+        </div>
         <div className="flex items-center gap-6">
           <Link href="/login" className="text-sm font-bold text-core hover:text-action transition-colors hidden sm:block">Login</Link>
           <Link href="/login" className="bg-action text-white text-sm font-bold px-4 py-2 rounded-sm hover:bg-core transition-colors">

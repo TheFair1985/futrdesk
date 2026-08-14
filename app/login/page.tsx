@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { loginAction, signupAction } from "./actions";
@@ -57,9 +58,9 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md z-10">
         
         {/* LOGO AREA */}
-        <div className="text-center mb-10">
-          <Link href="/" className="inline-block text-2xl font-bold font-sans text-core tracking-tight">
-            FUTRDESK_
+        <div className="text-center mb-10 flex flex-col items-center">
+          <Link href="/" className="inline-block mb-2">
+            <Image src="/logo.png" alt="Futrdesk Logo" width={180} height={48} priority />
           </Link>
           <p className="text-core/50 font-mono text-sm mt-2 tracking-widest uppercase">
             {isLogin ? "Anmeldung" : "Registrierung"}
