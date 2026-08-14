@@ -4,16 +4,17 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
-const LEMON_SQUEEZY_STORE_ID = process.env.LEMON_SQUEEZY_SHOP_ID || "futrdesk";
+const LEMON_SQUEEZY_STORE_ID = "441519";
 const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY || "test_key";
 
+// Use actual LemonSqueezy Variant IDs, NOT Product IDs
 const VARIANTS: Record<string, string> = {
-  STARTER: process.env.LEMON_SQUEEZY_PRODUCT_STARTER_ID || "1285105",
-  PRO: process.env.LEMON_SQUEEZY_PRODUCT_PRO || "1285123",
-  BUSINESS: process.env.LEMON_SQUEEZY_PRODUCT_BUSINESS_ID || "1285127",
-  ADDON_1: process.env.LEMON_SQUEEZY_PRODUCT_EINZELRECHNUNG || "1285155",
-  ADDON_20: process.env.LEMON_SQUEEZY_PRODUCT_RECHNUNGSPAKET_20 || "1285162",
-  ADDON_50: process.env.LEMON_SQUEEZY_PRODUCT_RECHNUNGSPAKET_50 || "1285169",
+  STARTER: "2009462",
+  PRO: "2009478",
+  BUSINESS: "2009484",
+  ADDON_1: "2009532",
+  ADDON_20: "2009541",
+  ADDON_50: "2009550",
 };
 
 export async function generateCheckoutUrl(formData: FormData) {
