@@ -31,13 +31,17 @@ export async function signupAction(formData: FormData) {
 
     const supabase = await createClient();
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
 
     if (error) {
       return { error: error.message };
+    }
+    
+    if (!data.session) {
+      return { error: "Bitte überprüfe deinen Posteingang und bestätige deine E-Mail-Adresse." };
     }
 
     return { success: true };

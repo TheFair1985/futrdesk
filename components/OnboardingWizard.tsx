@@ -13,6 +13,7 @@ export default function OnboardingWizard({ profile, email }: any) {
   const [vatInput, setVatInput] = useState("");
   const [companyData, setCompanyData] = useState<any>(null);
   const [mode, setMode] = useState<"vat" | "manual" | "upload">("vat");
+  const [legalConfirmed, setLegalConfirmed] = useState(false);
   
   // Step 2 State
   const [exportEmail, setExportEmail] = useState(profile?.export_email || "");
@@ -20,6 +21,7 @@ export default function OnboardingWizard({ profile, email }: any) {
 
   // Step 3 State
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.futrdesk_invoice_email || email || "");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleVatCheck = async () => {
     if (!vatInput) return;
@@ -27,10 +29,28 @@ export default function OnboardingWizard({ profile, email }: any) {
     const res = await verifyVatId(vatInput);
     if (res.success) {
       setCompanyData(res.company);
+      setLegalConfirmed(false);
     } else {
       alert(res.error);
     }
     setLoading(false);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setLoading(true);
+      // Simulate KI extraction
+      setTimeout(() => {
+        setLoading(false);
+        setCompanyData({
+          company_name: "Gewerbe " + (profile?.company_profile?.company_name || ""),
+          address: "",
+          tax_id: "",
+        });
+        setLegalConfirmed(false);
+        setMode("manual");
+      }, 2000);
+    }
   };
 
   const saveStep1 = async () => {
@@ -158,12 +178,22 @@ export default function OnboardingWizard({ profile, email }: any) {
                   )}
 
                   {mode === "upload" && (
-                    <div className="flex flex-col gap-4 items-center justify-center p-10 border-2 border-dashed border-shading/20 rounded-2xl bg-gray-50">
+                    <div 
+                      className="flex flex-col gap-4 items-center justify-center p-10 border-2 border-dashed border-shading/20 hover:border-action/50 transition-colors rounded-2xl bg-gray-50 cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       <UploadCloud className="w-10 h-10 text-core/30 mb-2" />
                       <p className="text-sm font-bold text-core">Dokument hochladen (oder Foto)</p>
                       <p className="text-xs text-core/50 text-center">Unsere KI liest deine Gewerbeanmeldung in Sekundenbruchteilen aus.</p>
-                      <button className="mt-4 px-6 py-2 bg-white border border-shading/20 rounded-xl text-sm font-bold text-core shadow-sm">Datei auswählen</button>
-                      <button onClick={() => setMode("vat")} className="text-xs font-bold text-core/50 mt-4">Abbrechen</button>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/*,.pdf" 
+                        onChange={handleFileUpload} 
+                      />
+                      <button className="mt-4 px-6 py-2 bg-white border border-shading/20 rounded-xl text-sm font-bold text-core shadow-sm pointer-events-none">Datei auswählen</button>
+                      <button onClick={(e) => { e.stopPropagation(); setMode("vat"); }} className="text-xs font-bold text-core/50 mt-4 relative z-10 hover:underline">Abbrechen</button>
                     </div>
                   )}
                 </div>
@@ -176,16 +206,35 @@ export default function OnboardingWizard({ profile, email }: any) {
                       <span className="font-bold text-green-800 text-lg">Daten erfolgreich abgerufen</span>
                     </div>
                     <div className="flex flex-col font-mono text-sm text-green-900/80 bg-green-100/50 p-4 rounded-xl border border-green-200/50">
-                      <strong className="text-green-900">{companyData.name || companyData.company_name}</strong>
-                      <span>{companyData.address}</span>
-                      {companyData.vat_id && <span className="mt-2">USt-IdNr.: {companyData.vat_id}</span>}
-                      {companyData.tax_id && <span>Steuernr.: {companyData.tax_id}</span>}
+                      <p className="text-xs text-green-800 mb-2 font-sans font-bold">Die USt-IdNr. ist gültig. Bitte bestätige oder ergänze deine Firmendaten für die Rechnungserstellung:</p>
+                      <div className="flex flex-col gap-2 w-full mt-2">
+                        <input type="text" value={companyData.company_name || companyData.name || ""} placeholder="Dein Firmenname" onChange={e => setCompanyData({...companyData, company_name: e.target.value})} className="w-full bg-white border border-green-300 rounded-lg px-3 py-2 text-sm font-medium text-core" />
+                        <input type="text" value={companyData.address || ""} placeholder="Adresse (optional)" onChange={e => setCompanyData({...companyData, address: e.target.value})} className="w-full bg-white border border-green-300 rounded-lg px-3 py-2 text-sm font-medium text-core" />
+                      </div>
+                      {companyData.vat_id && <span className="mt-4 text-xs font-bold opacity-70">Verifizierte USt-IdNr.: {companyData.vat_id}</span>}
+                    </div>
+
+                    <div className="flex items-start gap-3 bg-white border border-shading/10 p-4 rounded-xl">
+                      <input 
+                        type="checkbox" 
+                        id="legalConfirm" 
+                        checked={legalConfirmed}
+                        onChange={(e) => setLegalConfirmed(e.target.checked)}
+                        className="mt-1 w-4 h-4 text-action rounded border-gray-300 focus:ring-action" 
+                      />
+                      <label htmlFor="legalConfirm" className="text-xs text-core/70 leading-relaxed font-sans">
+                        Ich bestätige, dass dies meine korrekten Firmendaten sind und ich berechtigt bin, im Namen dieses Unternehmens zu handeln.
+                      </label>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <button onClick={() => setCompanyData(null)} className="px-6 py-3 rounded-xl font-bold text-core hover:bg-gray-100 transition-colors border border-shading/10 bg-white">Falsche Daten?</button>
-                    <button onClick={saveStep1} disabled={loading} className="flex-1 bg-core text-white font-bold px-6 py-3 rounded-xl hover:bg-core/90 transition-colors flex items-center justify-center gap-2 shadow-sm">
+                    <button 
+                      onClick={saveStep1} 
+                      disabled={loading || !legalConfirmed} 
+                      className="flex-1 bg-core text-white font-bold px-6 py-3 rounded-xl hover:bg-core/90 transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Stimmt! Speichern & Weiter'} <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -206,9 +255,9 @@ export default function OnboardingWizard({ profile, email }: any) {
 
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Monats-Export an Steuerberater</label>
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Monats-Export Empfänger (z.B. Buchhaltung, Steuerberater)</label>
                   <input value={exportEmail} onChange={e => setExportEmail(e.target.value)} type="email" placeholder="kanzlei@steuerberater.de" className="w-full bg-gray-50 border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50" />
-                  <p className="text-[10px] text-core/50 font-mono">Ein Duplikat des Monatsarchivs geht am Ende des Monats ohnehin immer an deine Account E-Mail.</p>
+                  <p className="text-[10px] text-core/50 font-mono">Hinweis: Wenn du hier keine E-Mail-Adresse einträgst, wird der monatliche Export automatisch an deine Account-E-Mail gesendet.</p>
                 </div>
 
                 <div className="flex items-start gap-4 p-5 bg-action/5 border border-action/20 rounded-2xl cursor-pointer" onClick={() => setAutoSend(!autoSend)}>
@@ -218,7 +267,11 @@ export default function OnboardingWizard({ profile, email }: any) {
                   </div>
                   <div className="flex-1">
                     <span className="font-bold text-core text-sm block">Rechnungen sofort an Kunden senden</span>
-                    <p className="text-xs text-core/60 mt-1">Keine Sorge: Wir verschicken nichts blind. Du musst jede E-Rechnung vorher kurz mit einem Klick freigeben.</p>
+                    {autoSend ? (
+                      <p className="text-xs text-core/60 mt-1">Keine Sorge: Wir verschicken nichts blind. Du musst jede E-Rechnung vorher kurz mit einem Klick freigeben.</p>
+                    ) : (
+                      <p className="text-xs text-red-600 font-bold mt-1">Achtung: Wir senden die fertige Rechnung als PDF nur in den Chat (WhatsApp/Telegram/E-Mail) zurück. Du bist selbst dafür verantwortlich, sie an den Kunden weiterzuleiten!</p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -4,16 +4,16 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
-const LEMON_SQUEEZY_STORE_ID = process.env.LEMON_SQUEEZY_STORE_ID || "store_123";
+const LEMON_SQUEEZY_STORE_ID = process.env.LEMON_SQUEEZY_SHOP_ID || "futrdesk";
 const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY || "test_key";
 
 const VARIANTS: Record<string, string> = {
-  STARTER: process.env.LS_VARIANT_STARTER || "12345",
-  PRO: process.env.LS_VARIANT_PRO || "12346",
-  BUSINESS: process.env.LS_VARIANT_BUSINESS || "12347",
-  ADDON_1: process.env.LS_VARIANT_ADDON_1 || "addon_1",
-  ADDON_20: process.env.LS_VARIANT_ADDON_20 || "addon_20",
-  ADDON_50: process.env.LS_VARIANT_ADDON_50 || "addon_50",
+  STARTER: process.env.LEMON_SQUEEZY_PRODUCT_STARTER_ID || "1285105",
+  PRO: process.env.LEMON_SQUEEZY_PRODUCT_PRO || "1285123",
+  BUSINESS: process.env.LEMON_SQUEEZY_PRODUCT_BUSINESS_ID || "1285127",
+  ADDON_1: process.env.LEMON_SQUEEZY_PRODUCT_EINZELRECHNUNG || "1285155",
+  ADDON_20: process.env.LEMON_SQUEEZY_PRODUCT_RECHNUNGSPAKET_20 || "1285162",
+  ADDON_50: process.env.LEMON_SQUEEZY_PRODUCT_RECHNUNGSPAKET_50 || "1285169",
 };
 
 export async function generateCheckoutUrl(formData: FormData) {
@@ -77,7 +77,7 @@ export async function generateCheckoutUrl(formData: FormData) {
   });
 
   if (!response.ok) {
-    // Sandbox / Test Fallback, falls keine API-Credentials gesetzt sind
+    // Sandbox / Test Fallback, falls API-Credentials oder Store-ID nicht passen
     console.log('Checkout API Error. Using fallback test redirect.', await response.text());
     redirect(`https://sandbox.lemonsqueezy.com/checkout/buy/${variantId}?checkout[custom][user_id]=${user.id}&checkout[quantity]=${quantity}`);
   }

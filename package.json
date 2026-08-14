@@ -4,6 +4,7 @@
   "description": "Futrdesk Zero-UI B2B-Middleware",
   "main": "index.js",
   "scripts": {
+    "dev": "next dev",
     "update-types": "supabase gen types typescript --project-id \"$PROJECT_REF\" --schema public > types/supabase.ts",
     "build": "next build"
   },

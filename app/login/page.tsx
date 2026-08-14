@@ -30,6 +30,7 @@ export default function LoginPage() {
       const res = await loginAction(formData);
       if (res.error) {
         setError("Falsche E-Mail oder Passwort.");
+        setLoading(false);
       } else {
         router.push("/dashboard");
         router.refresh();
@@ -38,13 +39,12 @@ export default function LoginPage() {
       const res = await signupAction(formData);
       if (res.error) {
         setError(res.error);
+        setLoading(false);
       } else {
-        setSuccess("Account erstellt! Du kannst dich jetzt einloggen.");
-        setIsLogin(true);
+        router.push("/dashboard");
+        router.refresh();
       }
     }
-    
-    setLoading(false);
   };
 
   return (
