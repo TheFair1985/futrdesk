@@ -208,8 +208,8 @@ export default function OnboardingWizard({ profile, email }: any) {
                     <div className="flex flex-col font-mono text-sm text-green-900/80 bg-green-100/50 p-4 rounded-xl border border-green-200/50">
                       <p className="text-xs text-green-800 mb-2 font-sans font-bold">Die USt-IdNr. ist gültig. Bitte bestätige oder ergänze deine Firmendaten für die Rechnungserstellung:</p>
                       <div className="flex flex-col gap-2 w-full mt-2">
-                        <input type="text" value={companyData.company_name || companyData.name || ""} placeholder="Dein Firmenname" onChange={e => setCompanyData({...companyData, company_name: e.target.value})} className="w-full bg-white border border-green-300 rounded-lg px-3 py-2 text-sm font-medium text-core" />
-                        <input type="text" value={companyData.address || ""} placeholder="Adresse (optional)" onChange={e => setCompanyData({...companyData, address: e.target.value})} className="w-full bg-white border border-green-300 rounded-lg px-3 py-2 text-sm font-medium text-core" />
+                        <input type="text" value={(companyData.company_name || companyData.name || "").replace("---", "")} placeholder="Dein Firmenname" onChange={e => setCompanyData({...companyData, company_name: e.target.value})} className="w-full bg-white border border-green-300 rounded-lg px-3 py-2 text-sm font-medium text-core" />
+                        <input type="text" value={(companyData.address || "").replace("---", "")} placeholder="Adresse (optional)" onChange={e => setCompanyData({...companyData, address: e.target.value})} className="w-full bg-white border border-green-300 rounded-lg px-3 py-2 text-sm font-medium text-core" />
                       </div>
                       {companyData.vat_id && <span className="mt-4 text-xs font-bold opacity-70">Verifizierte USt-IdNr.: {companyData.vat_id}</span>}
                     </div>

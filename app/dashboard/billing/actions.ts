@@ -79,7 +79,8 @@ export async function generateCheckoutUrl(formData: FormData) {
   if (!response.ok) {
     // Sandbox / Test Fallback, falls API-Credentials oder Store-ID nicht passen
     console.log('Checkout API Error. Using fallback test redirect.', await response.text());
-    redirect(`https://sandbox.lemonsqueezy.com/checkout/buy/${variantId}?checkout[custom][user_id]=${user.id}&checkout[quantity]=${quantity}`);
+    const storeDomain = process.env.LEMON_SQUEEZY_SHOP_ID || "futrdesk.lemonsqueezy.com";
+    redirect(`https://${storeDomain}/checkout/buy/${variantId}?checkout[custom][user_id]=${user.id}&checkout[quantity]=${quantity}`);
   }
 
   const data = await response.json();
