@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Shield, ArrowRight, Building2, Send, CreditCard, UploadCloud, Loader2, Zap } from "lucide-react";
 import { verifyVatId, saveOnboardingStep } from "../app/dashboard/onboardingActions";
@@ -21,7 +21,7 @@ export default function OnboardingWizard({ profile, email }: any) {
 
   // Step 3 State
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.futrdesk_invoice_email || email || "");
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleVatCheck = async () => {
     if (!vatInput) return;
