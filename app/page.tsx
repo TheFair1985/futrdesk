@@ -15,7 +15,7 @@ export default function Home() {
       {/* HEADER */}
       <header className="border-b border-shading px-4 py-4 md:px-8 flex items-center justify-between">
         <div className="flex items-center">
-          <Image src="/logo.png" alt="Futrdesk Logo" width={150} height={40} priority />
+          <Image src="/logo.png" alt="Futrdesk Logo" width={150} height={40} priority className="mix-blend-multiply" />
         </div>
         <div className="flex items-center gap-6">
           <Link href="/login" className="text-sm font-bold text-core hover:text-action transition-colors hidden sm:block">Login</Link>

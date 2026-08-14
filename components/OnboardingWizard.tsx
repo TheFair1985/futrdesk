@@ -124,7 +124,7 @@ function OnboardingContent({ profile, email }: any) {
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center py-20 relative">
         <div className="mb-12 text-center">
           <div className="text-xl font-bold font-sans tracking-tight mb-8 text-core flex justify-center">
-            <Image src="/logo.png" alt="Futrdesk Logo" width={150} height={40} priority />
+            <Image src="/logo.png" alt="Futrdesk Logo" width={150} height={40} priority className="mix-blend-multiply" />
           </div>
         </div>
 

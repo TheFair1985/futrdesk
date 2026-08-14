@@ -60,7 +60,7 @@ export default function LoginPage() {
         {/* LOGO AREA */}
         <div className="text-center mb-10 flex flex-col items-center">
           <Link href="/" className="inline-block mb-2">
-            <Image src="/logo.png" alt="Futrdesk Logo" width={180} height={48} priority />
+            <Image src="/logo.png" alt="Futrdesk Logo" width={180} height={48} priority className="mix-blend-multiply" />
           </Link>
           <p className="text-core/50 font-mono text-sm mt-2 tracking-widest uppercase">
             {isLogin ? "Anmeldung" : "Registrierung"}
