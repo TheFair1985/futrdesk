@@ -44,9 +44,9 @@ export async function POST(request: Request) {
 
     // 1. Handle One-Time Purchases (Unit Pay / Add-ons)
     if (eventName === 'order_created') {
-      const isEinzelrechnung = variantId === process.env.LEMON_SQUEEZY_PRODUCT_EINZELRECHNUNG;
-      const isPaket20 = variantId === process.env.LEMON_SQUEEZY_PRODUCT_RECHNUNGSPAKET_20;
-      const isPaket50 = variantId === process.env.LEMON_SQUEEZY_PRODUCT_RECHNUNGSPAKET_50;
+      const isEinzelrechnung = variantId === "2009532";
+      const isPaket20 = variantId === "2009541";
+      const isPaket50 = variantId === "2009550";
       
       let extraInvoices = 0;
       if (isEinzelrechnung) extraInvoices = 1;
@@ -73,9 +73,9 @@ export async function POST(request: Request) {
       let newTier = undefined;
       
       // Update Tier if variant corresponds to a plan
-      if (variantId === process.env.LEMON_SQUEEZY_PRODUCT_STARTER_ID) newTier = 'STARTER';
-      if (variantId === process.env.LEMON_SQUEEZY_PRODUCT_PRO) newTier = 'PRO';
-      if (variantId === process.env.LEMON_SQUEEZY_PRODUCT_BUSINESS_ID) newTier = 'BUSINESS';
+      if (variantId === "2009462") newTier = 'STARTER';
+      if (variantId === "2009478") newTier = 'PRO';
+      if (variantId === "2009484") newTier = 'BUSINESS';
 
       const updatePayload: any = {
         subscription_status: status,
