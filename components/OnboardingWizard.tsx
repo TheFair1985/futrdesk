@@ -1,14 +1,26 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Shield, ArrowRight, Building2, Send, CreditCard, UploadCloud, Loader2, Zap } from "lucide-react";
+import { CheckCircle2, Shield, ArrowRight, Building2, Send, CreditCard, UploadCloud, Loader2, Zap, RefreshCw } from "lucide-react";
 import { verifyVatId, saveOnboardingStep } from "../app/dashboard/onboardingActions";
 import { generateCheckoutUrl } from "../app/dashboard/billing/actions";
 import { cn } from "../lib/utils";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function OnboardingWizard({ profile, email }: any) {
-  const [step, setStep] = useState(1);
+function OnboardingContent({ profile, email }: any) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isPaymentPending = searchParams.get('payment') === 'success';
+
+  // Determine initial step based on existing profile data
+  let initialStep = 1;
+  const hasCompanyData = profile?.company_profile?.company_name;
+  if (hasCompanyData) initialStep = 2;
+  if (profile?.onboarding_completed) initialStep = 3;
+  if (isPaymentPending) initialStep = 4; // Virtual step for polling
+
+  const [step, setStep] = useState(initialStep);
   const [loading, setLoading] = useState(false);
   const [vatInput, setVatInput] = useState("");
   const [companyData, setCompanyData] = useState<any>(null);
@@ -22,6 +34,16 @@ export default function OnboardingWizard({ profile, email }: any) {
   // Step 3 State
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.futrdesk_invoice_email || email || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Poll for webhook completion if payment is pending
+  useEffect(() => {
+    if (isPaymentPending && !profile?.tier || profile?.tier === 'NONE') {
+      const interval = setInterval(() => {
+        router.refresh(); // Tells Next.js to re-fetch the layout (which queries the DB)
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [isPaymentPending, profile, router]);
 
   const handleVatCheck = async () => {
     if (!vatInput) return;
@@ -349,8 +371,30 @@ export default function OnboardingWizard({ profile, email }: any) {
               </div>
             </motion.div>
           )}
+          {step === 4 && (
+            <motion.div key="step4" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-xl bg-white p-10 rounded-3xl shadow-xl border border-shading/10 flex flex-col gap-8 text-center">
+              <div className="w-16 h-16 bg-action/10 rounded-2xl flex items-center justify-center text-action mx-auto mb-2">
+                <RefreshCw className="w-8 h-8 animate-spin" />
+              </div>
+              <h2 className="text-3xl font-black text-core tracking-tight">Zahlung wird verifiziert</h2>
+              <p className="text-sm text-core/60 leading-relaxed">
+                Dein Checkout war erfolgreich! Wir warten gerade auf die sichere Bestätigung von LemonSqueezy. Bitte schließe dieses Fenster nicht...
+              </p>
+              <div className="flex justify-center mt-4">
+                <Loader2 className="w-6 h-6 animate-spin text-core/30" />
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingWizard(props: any) {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-core" /></div>}>
+      <OnboardingContent {...props} />
+    </Suspense>
   );
 }
