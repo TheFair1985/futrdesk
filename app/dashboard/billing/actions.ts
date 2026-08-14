@@ -62,7 +62,6 @@ export async function generateCheckoutUrl(formData: FormData) {
             redirect_url: `${baseUrl}/dashboard?payment=success`
           },
           checkout_data: {
-            test_mode: true,
             custom: {
               user_id: user.id
             }
