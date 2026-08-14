@@ -54,6 +54,7 @@ export async function generateCheckoutUrl(formData: FormData) {
         type: 'checkouts',
         attributes: {
           checkout_data: {
+            test_mode: true,
             custom: {
               user_id: user.id
             }
