@@ -18,10 +18,11 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
   const [newPassword, setNewPassword] = useState("");
   const [securityMessage, setSecurityMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
-  // Company Controlled States for Auto-Fill
+  // Company Profile defaults
   const initialCompany = profile?.company_profile || {
     company_name: profile?.company_name || "",
     legal_form: profile?.legal_form || "",
+    managing_director: profile?.managing_director || "",
     street: profile?.street || "",
     zip: profile?.zip || "",
     city: profile?.city || "",
@@ -30,7 +31,11 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
     phone: profile?.phone || "",
     vat_id: profile?.vat_id || "",
     tax_id: profile?.tax_id || "",
-    commercial_register: profile?.commercial_register || ""
+    commercial_register: profile?.commercial_register || "",
+    iban: profile?.iban || "",
+    bic: profile?.bic || "",
+    bank_name: profile?.bank_name || "",
+    is_small_business: profile?.is_small_business || false
   };
   const [companyForm, setCompanyForm] = useState(initialCompany);
   const [isFetchingVat, setIsFetchingVat] = useState(false);
@@ -175,17 +180,26 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                       
                       <div className="flex flex-col gap-1 mb-8">
                         <span className="text-xl font-black text-core font-sans tracking-tight">{initialCompany.company_name || 'Musterfirma'} {initialCompany.legal_form}</span>
-                        <span className="text-core/60">{initialCompany.street || 'Musterstraße 1'}</span>
+                        {initialCompany.managing_director && <span className="text-sm font-bold text-core/80 mt-1">Vertreten durch: {initialCompany.managing_director}</span>}
+                        <span className="text-core/60 mt-2">{initialCompany.street || 'Musterstraße 1'}</span>
                         <span className="text-core/60">{initialCompany.zip || '10115'} {initialCompany.city || 'Berlin'}</span>
+                        {initialCompany.is_small_business && <span className="text-xs font-bold text-action mt-2">Kleinunternehmer gemäß § 19 UStG</span>}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-y-2 max-w-lg text-xs text-core/50">
+                      <div className="grid grid-cols-2 gap-y-2 max-w-lg text-xs text-core/50 mb-6">
                         <div><span className="font-bold text-core/70">USt-IdNr.:</span> {initialCompany.vat_id || '-'}</div>
                         <div><span className="font-bold text-core/70">E-Mail:</span> {initialCompany.public_email || '-'}</div>
                         <div><span className="font-bold text-core/70">Steuernummer:</span> {initialCompany.tax_id || '-'}</div>
                         <div><span className="font-bold text-core/70">Tel:</span> {initialCompany.phone || '-'}</div>
                         <div><span className="font-bold text-core/70">Register:</span> {initialCompany.commercial_register || '-'}</div>
                         <div><span className="font-bold text-core/70">Web:</span> {initialCompany.website || '-'}</div>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-gray-300 border-dashed grid grid-cols-2 gap-y-2 text-xs text-core/50">
+                        <div className="col-span-2 text-[10px] uppercase font-bold text-core/40 tracking-widest mb-1">Bankverbindung</div>
+                        <div className="col-span-2"><span className="font-bold text-core/70">Bank:</span> {initialCompany.bank_name || '-'}</div>
+                        <div className="col-span-2 font-mono"><span className="font-bold text-core/70 font-sans">IBAN:</span> {initialCompany.iban || '-'}</div>
+                        <div className="col-span-2 font-mono"><span className="font-bold text-core/70 font-sans">BIC:</span> {initialCompany.bic || '-'}</div>
                       </div>
                     </div>
                   ) : (
@@ -239,8 +253,13 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                           <input name="company_name" type="text" value={companyForm.company_name} onChange={e => setCompanyForm({...companyForm, company_name: e.target.value})} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all bg-white shadow-sm" />
                         </div>
                         <div className="flex flex-col gap-2 mt-2">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Rechtsform</label>
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Rechtsform (z.B. GmbH, Freiberufler)</label>
                           <input name="legal_form" type="text" value={companyForm.legal_form} onChange={e => setCompanyForm({...companyForm, legal_form: e.target.value})} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all bg-white shadow-sm" />
+                        </div>
+
+                        <div className="flex flex-col gap-2 md:col-span-2 mb-4">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Geschäftsführer / Inhaber (Optional)</label>
+                          <input name="managing_director" type="text" value={companyForm.managing_director} onChange={e => setCompanyForm({...companyForm, managing_director: e.target.value})} placeholder="Max Mustermann" className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all bg-white shadow-sm" />
                         </div>
                         
                         <div className="flex flex-col gap-2 md:col-span-2">
@@ -277,6 +296,35 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                         <div className="flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold tracking-widest text-action font-mono">Handelsregister (optional)</label>
                           <input name="commercial_register" type="text" value={companyForm.commercial_register} onChange={e => setCompanyForm({...companyForm, commercial_register: e.target.value})} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
+                        </div>
+                      </div>
+
+                      <div className="border-t border-shading/10 pt-6 mt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                          <h3 className="font-bold text-sm text-core uppercase tracking-widest font-mono mb-1">Zahlungsverkehr (Bankdaten)</h3>
+                          <p className="text-xs text-core/60">Notwendig, damit deine Kunden deine ZUGFeRD-Rechnungen bezahlen können.</p>
+                        </div>
+                        <div className="flex flex-col gap-2 md:col-span-2">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Bankname</label>
+                          <input name="bank_name" type="text" value={companyForm.bank_name} onChange={e => setCompanyForm({...companyForm, bank_name: e.target.value})} placeholder="z.B. Deutsche Bank" className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">IBAN</label>
+                          <input name="iban" type="text" value={companyForm.iban} onChange={e => setCompanyForm({...companyForm, iban: e.target.value.toUpperCase().replace(/\s/g, '')})} placeholder="DEXX XXXX XXXX XXXX XXXX XX" className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all font-mono uppercase" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">BIC</label>
+                          <input name="bic" type="text" value={companyForm.bic} onChange={e => setCompanyForm({...companyForm, bic: e.target.value.toUpperCase().replace(/\s/g, '')})} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all font-mono uppercase" />
+                        </div>
+                      </div>
+
+                      <div className="border-t border-shading/10 pt-6 mt-2 flex items-start gap-4">
+                        <div className="pt-1">
+                          <input type="checkbox" name="is_small_business" checked={companyForm.is_small_business} onChange={e => setCompanyForm({...companyForm, is_small_business: e.target.checked})} className="w-5 h-5 accent-action cursor-pointer rounded-md" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-core">Kleinunternehmer (§ 19 UStG)</span>
+                          <span className="text-xs text-core/60 mt-1">Aktivieren, wenn du als Freelancer/Gewerbe von der Umsatzsteuer befreit bist. Der gesetzliche Pflichthinweis wird automatisch auf deinen Rechnungen platziert.</span>
                         </div>
                       </div>
 

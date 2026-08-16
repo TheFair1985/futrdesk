@@ -62,16 +62,20 @@ export default async function SettingsPage() {
       const companyData = {
         company_name: formData.get('company_name'),
         legal_form: formData.get('legal_form'),
+        managing_director: formData.get('managing_director'),
         street: formData.get('street'),
         zip: formData.get('zip'),
         city: formData.get('city'),
         public_email: formData.get('public_email'),
         website: formData.get('website'),
         phone: formData.get('phone'),
-        fax: formData.get('fax'),
         vat_id: formData.get('vat_id'),
         tax_id: formData.get('tax_id'),
         commercial_register: formData.get('commercial_register'),
+        bank_name: formData.get('bank_name'),
+        iban: formData.get('iban'),
+        bic: formData.get('bic'),
+        is_small_business: formData.get('is_small_business') === 'on',
         court: formData.get('court'),
       };
 
