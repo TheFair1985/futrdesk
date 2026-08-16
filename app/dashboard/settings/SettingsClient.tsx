@@ -123,17 +123,34 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
   const handleEnroll2FA = async () => {
     setTwoFaLoading(true);
     setSecurityMessage(null);
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
-    if (error) {
-      let msg = error.message;
-      if (msg.includes("MFA is not enabled")) msg = "2FA ist in den Supabase Projekteinstellungen noch deaktiviert.";
-      if (msg.includes("session")) msg = "Deine Sitzung ist abgelaufen. Bitte logge dich neu ein.";
-      setSecurityMessage({ type: 'error', text: `Fehler: ${msg}` });
-    } else if (data) {
-      setFactorId(data.id);
-      setQrCodeData({ qr_code: data.totp.qr_code, secret: data.totp.secret });
-      setIsSettingUp2FA(true);
+    
+    try {
+      // 1. Cleanup stale unverified factors to prevent "already exists" error
+      const factors = await supabase.auth.mfa.listFactors();
+      if (factors.data && factors.data.totp.length > 0) {
+        for (const factor of factors.data.totp) {
+          if (factor.status === 'unverified') {
+            await supabase.auth.mfa.unenroll({ factorId: factor.id });
+          }
+        }
+      }
+
+      // 2. Start fresh enrollment
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+      if (error) {
+        let msg = error.message;
+        if (msg.includes("MFA is not enabled")) msg = "2FA ist in den Supabase Projekteinstellungen noch deaktiviert.";
+        if (msg.includes("session")) msg = "Deine Sitzung ist abgelaufen. Bitte logge dich neu ein.";
+        setSecurityMessage({ type: 'error', text: `Fehler: ${msg}` });
+      } else if (data) {
+        setFactorId(data.id);
+        setQrCodeData({ qr_code: data.totp.qr_code, secret: data.totp.secret });
+        setIsSettingUp2FA(true);
+      }
+    } catch (err: any) {
+      setSecurityMessage({ type: 'error', text: "Unerwarteter Fehler bei der 2FA Einrichtung." });
     }
+    
     setTwoFaLoading(false);
   };
 
