@@ -538,67 +538,16 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                     </div>
                   </div>
                   
-                  {/* 2FA SECTION */}
-                  {!isSettingUp2FA ? (
-                    <div className={cn("p-5 rounded-2xl border flex items-center justify-between", is2FAEnabled ? "bg-green-50/50 border-green-200" : "bg-white border-shading/10")}>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-core text-sm flex items-center gap-2">
-                          Zwei-Faktor-Authentifizierung (2FA)
-                          {is2FAEnabled && <span className="bg-green-100 text-green-700 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full font-mono">Aktiv</span>}
-                        </span>
-                        <span className="text-xs text-core/60 mt-1">
-                          {is2FAEnabled ? "Dein Account ist zusätzlich durch eine Authenticator-App geschützt." : "Schütze deinen Account zusätzlich mit einer Authenticator-App (z.B. Google Authenticator)."}
-                        </span>
-                      </div>
-                      {is2FAEnabled ? (
-                        <button disabled={twoFaLoading} onClick={handleDisable2FA} className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs uppercase tracking-widest rounded-lg shadow-sm flex items-center gap-2 transition-colors">
-                          {twoFaLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Deaktivieren"}
-                        </button>
-                      ) : (
-                        <button disabled={twoFaLoading} onClick={handleEnroll2FA} className="px-4 py-2 bg-core text-white font-bold text-xs uppercase tracking-widest rounded-lg shadow-sm flex items-center gap-2">
-                          {twoFaLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Aktivieren"}
-                        </button>
-                      )}
+                  {/* 2FA SECTION - DISABLED */}
+                  <div className="p-5 rounded-2xl border border-shading/10 bg-white flex items-center justify-between opacity-50 grayscale pointer-events-none">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-core text-sm">Zwei-Faktor-Authentifizierung (2FA)</span>
+                      <span className="text-xs text-core/60 mt-1">Schütze deinen Account zusätzlich mit einer Authenticator-App. (In Kürze verfügbar)</span>
                     </div>
-                  ) : (
-                    <div className="p-6 rounded-2xl border border-action/20 bg-action/5 flex flex-col gap-6">
-                      <div className="flex items-center gap-3 border-b border-action/10 pb-4">
-                        <QrCode className="w-6 h-6 text-action" />
-                        <div>
-                          <h3 className="font-bold text-core">2FA Einrichten</h3>
-                          <p className="text-xs text-core/60">Scanne diesen QR-Code mit deiner Authenticator App (Google Authenticator, Authy, Apple Passwörter).</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col md:flex-row gap-8 items-center">
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-shading/10">
-                          {qrCodeData?.qr_code ? (
-                            <QRCodeSVG value={qrCodeData.qr_code} size={150} level={"H"} />
-                          ) : (
-                            <div className="w-[150px] h-[150px] bg-gray-100 animate-pulse rounded-lg" />
-                          )}
-                        </div>
-                        <div className="flex flex-col gap-4 w-full max-w-xs">
-                          <div className="flex flex-col gap-2">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">6-stelliger Code</label>
-                            <input 
-                              type="text" 
-                              value={totpCode} 
-                              onChange={e => setTotpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))} 
-                              placeholder="123456" 
-                              className="w-full border border-shading/10 rounded-xl px-4 py-3 text-2xl tracking-[0.5em] font-mono text-center focus:border-action focus:ring-2 focus:ring-action/20 focus:outline-none bg-white"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <button disabled={twoFaLoading} onClick={() => setIsSettingUp2FA(false)} className="flex-1 px-3 py-3 text-xs font-bold text-core/60 hover:text-core bg-white border border-shading/10 rounded-xl">Abbrechen</button>
-                            <button disabled={twoFaLoading || totpCode.length !== 6} onClick={handleVerify2FA} className="flex-1 px-3 py-3 text-xs font-bold bg-action text-white rounded-xl shadow-sm hover:bg-action/90 flex items-center justify-center gap-2">
-                              {twoFaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Bestätigen"}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                    <button className="px-4 py-2 bg-core text-white font-bold text-xs uppercase tracking-widest rounded-lg shadow-sm">
+                      Aktivieren
+                    </button>
+                  </div>
                 </div>
 
                 {/* DANGER ZONE */}
