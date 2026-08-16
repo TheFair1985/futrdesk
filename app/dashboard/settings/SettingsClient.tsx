@@ -1,14 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, CreditCard, Send, HardDrive, Zap, Layers, Mail, Archive as ArchiveIcon, Save, Building2, Shield, AlertTriangle, Key, CheckCircle2, FileText, Lock, Unlock, ArrowRight } from "lucide-react";
+import { User, CreditCard, Send, HardDrive, Zap, Layers, Mail, Archive as ArchiveIcon, Save, Building2, Shield, AlertTriangle, Key, CheckCircle2, FileText, Lock, Unlock, ArrowRight, Loader2 } from "lucide-react";
 import { cn } from "../../../lib/utils";
+import { updateAuthEmail, updateAuthPassword, deleteAccount, triggerDataExport } from "./securityActions";
 
 export default function SettingsClient({ profile, email, generateCheckoutUrlAction, updateSettingsAction }: any) {
   const [activeTab, setActiveTab] = useState("company");
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [showReverifyModal, setShowReverifyModal] = useState(false);
+  
+  // Security Tab States
+  const [isPending, startTransition] = useTransition();
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [editingPassword, setEditingPassword] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [securityMessage, setSecurityMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+
+  const handleSecurityAction = (action: () => Promise<{success?: string, error?: string}>) => {
+    setSecurityMessage(null);
+    startTransition(async () => {
+      const res = await action();
+      if (res.error) setSecurityMessage({ type: 'error', text: res.error });
+      else if (res.success) setSecurityMessage({ type: 'success', text: res.success });
+      
+      setEditingEmail(false);
+      setEditingPassword(false);
+      setNewEmail("");
+      setNewPassword("");
+      
+      // Auto-clear success message after 5s
+      if (res.success) setTimeout(() => setSecurityMessage(null), 5000);
+    });
+  };
 
   const tabs = [
     { id: "company", label: "Firmendaten", icon: Building2 },
@@ -296,6 +322,13 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
             {activeTab === "security" && (
               <div className="flex flex-col gap-8">
                 
+                {securityMessage && (
+                  <div className={cn("p-4 rounded-2xl border flex items-center gap-3", securityMessage.type === 'error' ? "bg-red-50 border-red-200 text-red-700" : "bg-green-50 border-green-200 text-green-700")}>
+                    {securityMessage.type === 'error' ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                    <span className="text-sm font-bold">{securityMessage.text}</span>
+                  </div>
+                )}
+                
                 {/* LOGIN CREDENTIALS */}
                 <div className="bg-white border border-shading/10 rounded-3xl p-8 shadow-[0_2px_20px_rgb(0,0,0,0.02)] flex flex-col gap-6">
                   <div className="flex items-center gap-3 mb-2">
@@ -310,28 +343,58 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col gap-3 p-5 rounded-2xl border border-shading/10 bg-gray-50">
-                      <div>
-                        <span className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono block mb-1">Login E-Mail</span>
-                        <span className="font-bold text-core block">{email}</span>
-                      </div>
-                      <button className="text-sm font-bold text-action hover:text-action/80 text-left w-max">E-Mail ändern</button>
+                      {!editingEmail ? (
+                        <>
+                          <div>
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono block mb-1">Login E-Mail</span>
+                            <span className="font-bold text-core block">{email}</span>
+                          </div>
+                          <button onClick={() => setEditingEmail(true)} className="text-sm font-bold text-action hover:text-action/80 text-left w-max">E-Mail ändern</button>
+                        </>
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-action font-mono">Neue E-Mail Adresse</label>
+                          <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="neue@email.de" className="w-full border border-shading/10 rounded-xl px-3 py-2 text-sm text-core focus:border-action/50 focus:outline-none" />
+                          <div className="flex gap-2">
+                            <button onClick={() => setEditingEmail(false)} className="px-3 py-2 text-xs font-bold text-core/60 hover:text-core">Abbrechen</button>
+                            <button disabled={isPending || !newEmail} onClick={() => handleSecurityAction(() => updateAuthEmail(newEmail))} className="px-3 py-2 text-xs font-bold bg-core text-white rounded-lg flex items-center gap-2">
+                              {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Speichern
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-3 p-5 rounded-2xl border border-shading/10 bg-gray-50">
-                      <div>
-                        <span className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono block mb-1">Passwort</span>
-                        <span className="font-bold text-core block tracking-[0.2em]">••••••••</span>
-                      </div>
-                      <button className="text-sm font-bold text-action hover:text-action/80 text-left w-max">Passwort ändern</button>
+                      {!editingPassword ? (
+                        <>
+                          <div>
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono block mb-1">Passwort</span>
+                            <span className="font-bold text-core block tracking-[0.2em]">••••••••</span>
+                          </div>
+                          <button onClick={() => setEditingPassword(true)} className="text-sm font-bold text-action hover:text-action/80 text-left w-max">Passwort ändern</button>
+                        </>
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-action font-mono">Neues Passwort</label>
+                          <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 8 Zeichen" className="w-full border border-shading/10 rounded-xl px-3 py-2 text-sm text-core focus:border-action/50 focus:outline-none" />
+                          <div className="flex gap-2">
+                            <button onClick={() => setEditingPassword(false)} className="px-3 py-2 text-xs font-bold text-core/60 hover:text-core">Abbrechen</button>
+                            <button disabled={isPending || newPassword.length < 6} onClick={() => handleSecurityAction(() => updateAuthPassword(newPassword))} className="px-3 py-2 text-xs font-bold bg-core text-white rounded-lg flex items-center gap-2">
+                              {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Speichern
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
-                  <div className="p-5 rounded-2xl border border-shading/10 bg-white flex items-center justify-between">
+                  <div className="p-5 rounded-2xl border border-shading/10 bg-white flex items-center justify-between opacity-50 grayscale pointer-events-none">
                     <div className="flex flex-col">
                       <span className="font-bold text-core text-sm">Zwei-Faktor-Authentifizierung (2FA)</span>
-                      <span className="text-xs text-core/60 mt-1">Schütze deinen Account zusätzlich mit einer Authenticator-App.</span>
+                      <span className="text-xs text-core/60 mt-1">Schütze deinen Account zusätzlich mit einer Authenticator-App. (In Kürze verfügbar)</span>
                     </div>
-                    <button className="px-4 py-2 bg-core text-white font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-core/90 transition-colors shadow-sm">
+                    <button className="px-4 py-2 bg-core text-white font-bold text-xs uppercase tracking-widest rounded-lg shadow-sm">
                       Aktivieren
                     </button>
                   </div>
@@ -355,7 +418,9 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                         <span className="font-bold text-core text-sm">Datenexport anfordern</span>
                         <span className="text-xs text-core/60">Lade alle deine Rechnungen und Metadaten als Archiv herunter.</span>
                       </div>
-                      <button className="px-4 py-2 border border-shading/20 font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-gray-100 transition-colors">Export</button>
+                      <button disabled={isPending} onClick={() => handleSecurityAction(triggerDataExport)} className="px-4 py-2 border border-shading/20 font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2">
+                        {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Export"}
+                      </button>
                     </div>
                     
                     <div className="flex items-center justify-between p-4 border border-red-200 rounded-xl bg-red-50/50">
@@ -363,7 +428,17 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                         <span className="font-bold text-red-600 text-sm">Account endgültig löschen</span>
                         <span className="text-xs text-red-500/70">Dies löscht alle deine Daten unwiderruflich. Dein Abo wird sofort gekündigt.</span>
                       </div>
-                      <button className="px-4 py-2 bg-red-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-red-700 transition-colors shadow-sm">Löschen</button>
+                      <button 
+                        disabled={isPending} 
+                        onClick={() => {
+                          if(window.confirm("Bist du sicher, dass du deinen Account komplett löschen möchtest? Dies kann nicht rückgängig gemacht werden!")) {
+                            handleSecurityAction(deleteAccount);
+                          }
+                        }} 
+                        className="px-4 py-2 bg-red-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-red-700 transition-colors shadow-sm flex items-center gap-2"
+                      >
+                        {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Löschen"}
+                      </button>
                     </div>
                   </div>
                 </div>
