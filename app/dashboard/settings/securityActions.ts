@@ -4,17 +4,24 @@ import { createClient } from "../../../lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 
+function translateAuthError(msg: string) {
+  if (msg.includes("New password should be different from the old password")) return "Das neue Passwort muss sich von deinem alten unterscheiden.";
+  if (msg.includes("Password should be at least")) return "Dein Passwort muss mindestens 8 Zeichen lang sein.";
+  if (msg.includes("For security purposes, you can only request this once every")) return "Aus Sicherheitsgründen musst du 60 Sekunden warten, bevor du das erneut anfragen kannst.";
+  return msg;
+}
+
 export async function updateAuthEmail(newEmail: string) {
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ email: newEmail });
-  if (error) return { error: error.message };
+  if (error) return { error: translateAuthError(error.message) };
   return { success: "Bitte prüfe dein neues Postfach (und das alte), um die Änderung zu bestätigen." };
 }
 
 export async function updateAuthPassword(newPassword: string) {
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: newPassword });
-  if (error) return { error: error.message };
+  if (error) return { error: translateAuthError(error.message) };
   return { success: "Dein Passwort wurde erfolgreich geändert." };
 }
 

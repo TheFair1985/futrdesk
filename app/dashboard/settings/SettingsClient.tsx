@@ -125,7 +125,10 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
     setSecurityMessage(null);
     const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
     if (error) {
-      setSecurityMessage({ type: 'error', text: "Fehler beim Starten der 2FA-Einrichtung." });
+      let msg = error.message;
+      if (msg.includes("MFA is not enabled")) msg = "2FA ist in den Supabase Projekteinstellungen noch deaktiviert.";
+      if (msg.includes("session")) msg = "Deine Sitzung ist abgelaufen. Bitte logge dich neu ein.";
+      setSecurityMessage({ type: 'error', text: `Fehler: ${msg}` });
     } else if (data) {
       setFactorId(data.id);
       setQrCodeData({ qr_code: data.totp.qr_code, secret: data.totp.secret });
