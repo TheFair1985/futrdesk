@@ -40,8 +40,6 @@ export default async function DashboardLayout({
   const hasCompanyData = profile?.company_profile?.company_name && (profile?.company_profile?.vat_id || profile?.company_profile?.tax_id);
   
   // Gatekeeper Logic:
-  // If user hasn't completed onboarding, or has no subscription, show wizard.
-  // We use user_metadata to track the explicit "onboarding_completed" flag to allow them to skip non-essentials.
   const needsOnboarding = !profile.onboarding_completed || !isSubscribed || !hasCompanyData;
 
   if (needsOnboarding) {
@@ -53,8 +51,16 @@ export default async function DashboardLayout({
     );
   }
 
+  const displayTier = (profile?.tier && profile.tier !== 'NONE') ? profile.tier : (isPaymentPendingBypass ? 'Aktivierung läuft...' : 'NONE');
+  
+  const profileToPass = {
+    ...profile,
+    company_name: profile.company_name || profile.company_profile?.company_name,
+    tier: displayTier,
+  };
+
   return (
-    <DashboardLayoutClient profile={profile}>
+    <DashboardLayoutClient profile={profileToPass}>
       {children}
     </DashboardLayoutClient>
   );

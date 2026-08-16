@@ -1,7 +1,14 @@
 "use server";
 
 import { createClient } from "../../lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+
+const getSupabaseAdmin = () => createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PROJECT_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY || ''
+);
 
 export async function verifyVatId(vatNumber: string) {
   try {
@@ -37,7 +44,7 @@ export async function saveOnboardingStep(stepData: any) {
   
   await supabase.auth.updateUser({ data: newMeta });
 
-  // Update public users table for non-metadata fields if provided
+  // Update public users table for non-metadata fields securely bypassing RLS
   const flatUpdates: any = {};
   if (stepData.company_profile?.company_name) flatUpdates.company_name = stepData.company_profile.company_name;
   if (stepData.export_email !== undefined) flatUpdates.export_email = stepData.export_email;
@@ -45,14 +52,13 @@ export async function saveOnboardingStep(stepData: any) {
   if (stepData.futrdesk_invoice_email !== undefined) flatUpdates.futrdesk_invoice_email = stepData.futrdesk_invoice_email;
   
   if (Object.keys(flatUpdates).length > 0) {
-    await supabase.from('users').update(flatUpdates).eq('id', user.id);
+    const admin = getSupabaseAdmin();
+    await admin.from('users').update(flatUpdates).eq('id', user.id);
   }
 
   revalidatePath('/dashboard');
   return { success: true };
 }
-
-import { cookies } from "next/headers";
 
 export async function markPaymentPending() {
   const cookieStore = await cookies();
