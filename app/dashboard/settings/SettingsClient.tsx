@@ -6,7 +6,6 @@ import { User, CreditCard, Send, HardDrive, Zap, Layers, Mail, Archive as Archiv
 import { cn } from "../../../lib/utils";
 import { updateAuthEmail, updateAuthPassword, deleteAccount, triggerDataExport } from "./securityActions";
 import { createClient } from "../../../lib/supabase/client";
-import { QRCodeSVG } from "qrcode.react";
 
 export default function SettingsClient({ profile, email, generateCheckoutUrlAction, updateSettingsAction }: any) {
   const [activeTab, setActiveTab] = useState("company");
