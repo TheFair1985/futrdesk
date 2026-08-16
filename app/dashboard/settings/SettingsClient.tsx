@@ -524,14 +524,94 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
               </div>
             )}
 
-            {/* TAB: INVOICE & WORKFLOW... [unchanged, omitted for brevity but they are handled by identical forms as before if requested, since user focus is on Company/KYB now] */}
-            {(activeTab === "invoice" || activeTab === "workflow") && (
-              <div className="bg-white border border-shading/10 rounded-3xl p-8 shadow-[0_2px_20px_rgb(0,0,0,0.02)] flex flex-col gap-8">
-                <h2 className="text-xl font-black text-core uppercase tracking-tight">{activeTab === 'invoice' ? 'Rechnungsdaten' : 'Automatisierung'}</h2>
-                <div className="p-8 bg-gray-50 border border-shading/10 rounded-2xl flex items-center justify-center text-core/50 font-mono text-sm text-center">
-                  Bereich wurde temporär eingeklappt, um den Fokus auf die neue "Verifizierung & Briefkopf" Logic zu legen.<br/>
-                  (Formular-Code ist im Backend noch intakt)
+            {/* TAB: INVOICE */}
+            {activeTab === "invoice" && (
+              <div className="bg-white border border-shading/10 rounded-3xl p-8 shadow-[0_2px_20px_rgb(0,0,0,0.02)] flex flex-col gap-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-core/50">
+                    <CreditCard className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-core uppercase tracking-tight">Rechnungsdaten</h2>
+                    <p className="text-xs font-mono text-core/40">Zahlungs- und Abrechnungsinformationen</p>
+                  </div>
                 </div>
+
+                <form action={updateSettingsAction} className="flex flex-col gap-6">
+                  <input type="hidden" name="form_type" value="billing" />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-2 md:col-span-2">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">E-Mail für Futrdesk-Rechnungen</label>
+                      <input name="futrdesk_invoice_email" type="email" defaultValue={profile?.futrdesk_invoice_email || email} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all shadow-sm" />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Abteilung (Optional)</label>
+                      <input name="department" type="text" defaultValue={profile?.department} placeholder="z.B. Buchhaltung" className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all shadow-sm" />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Kostenstelle (Optional)</label>
+                      <input name="cost_center" type="text" defaultValue={profile?.cost_center} placeholder="z.B. 1000" className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all shadow-sm" />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-4 pt-6 border-t border-shading/10">
+                    <button type="submit" className="bg-core text-white hover:bg-core/90 transition-colors font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm">
+                      <Save className="w-4 h-4" /> Speichern
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* TAB: WORKFLOW */}
+            {activeTab === "workflow" && (
+              <div className="bg-white border border-shading/10 rounded-3xl p-8 shadow-[0_2px_20px_rgb(0,0,0,0.02)] flex flex-col gap-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-core/50">
+                    <Send className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-core uppercase tracking-tight">Automatisierung</h2>
+                    <p className="text-xs font-mono text-core/40">Workflows & Steuerberater-Export</p>
+                  </div>
+                </div>
+
+                <form action={updateSettingsAction} className="flex flex-col gap-8">
+                  <input type="hidden" name="form_type" value="workflow" />
+                  
+                  <div className="flex items-start gap-4 p-5 rounded-2xl border border-shading/10 bg-gray-50">
+                    <div className="pt-1">
+                      <input type="checkbox" name="auto_send_invoices" defaultChecked={profile?.auto_send_invoices !== false} className="w-5 h-5 accent-action cursor-pointer rounded-md" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm text-core">Auto-Versand aktivieren</span>
+                      <span className="text-xs text-core/60 mt-1">Eingehende Rechnungen werden sofort nach Erkennung weitergeleitet. Bei Deaktivierung müssen Rechnungen manuell im Dashboard freigegeben werden.</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Export-Ziel</label>
+                      <select name="export_target" defaultValue={profile?.export_target || 'DATEV'} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all shadow-sm bg-white">
+                        <option value="DATEV">DATEV Unternehmen online</option>
+                        <option value="LEXOFFICE">Lexoffice</option>
+                        <option value="SEVDESK">sevDesk</option>
+                        <option value="CUSTOM_EMAIL">E-Mail (ZIP-Archiv)</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Export E-Mail Adresse</label>
+                      <input name="export_email" type="email" defaultValue={profile?.export_email || ''} placeholder="steuerberater@kanzlei.de" className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all shadow-sm" />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-4 pt-6 border-t border-shading/10">
+                    <button type="submit" className="bg-core text-white hover:bg-core/90 transition-colors font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm">
+                      <Save className="w-4 h-4" /> Speichern
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
 
