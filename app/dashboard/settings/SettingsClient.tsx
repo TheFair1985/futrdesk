@@ -35,32 +35,43 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
   const [companyForm, setCompanyForm] = useState(initialCompany);
   const [isFetchingVat, setIsFetchingVat] = useState(false);
 
+  const [isVatValid, setIsVatValid] = useState<boolean | null>(null);
+
   const handleFetchVat = async () => {
     if (!companyForm.vat_id) return;
     setIsFetchingVat(true);
-    // Dynamically import the action to avoid client/server component module scope issues
-    const { verifyVatId } = await import('../onboardingActions');
-    const res = await verifyVatId(companyForm.vat_id);
-    if (res.success && res.company) {
-      // Very basic address parser for EU VIES format
-      const parts = res.company.address ? res.company.address.split('\n') : [];
-      const streetPart = parts[0] || '';
-      const cityPart = parts[1] || '';
+    setIsVatValid(null);
+    
+    try {
+      const { verifyVatId } = await import('../onboardingActions');
+      const res = await verifyVatId(companyForm.vat_id);
       
-      const zipMatch = cityPart.match(/\d{5}/);
-      const zip = zipMatch ? zipMatch[0] : '';
-      const city = cityPart.replace(/\d{5}/, '').trim();
-
-      setCompanyForm((prev: any) => ({
-        ...prev,
-        company_name: res.company.name || prev.company_name,
-        street: streetPart || prev.street,
-        zip: zip || prev.zip,
-        city: city || prev.city,
-      }));
-    } else {
-      alert("USt-IdNr. konnte nicht automatisch abgerufen werden. Bitte manuell eintragen.");
+      if (res.success && res.company) {
+        setIsVatValid(true);
+        // German VIES blocks name/address (returns '---'). Only fill if it's actual data.
+        if (res.company.name && res.company.name !== '---') {
+          setCompanyForm((prev: any) => ({ ...prev, company_name: res.company.name }));
+        }
+        if (res.company.address && res.company.address !== '---') {
+          const parts = res.company.address.split('\n');
+          const streetPart = parts[0] || '';
+          const cityPart = parts[1] || '';
+          const zipMatch = cityPart.match(/\d{5}/);
+          
+          setCompanyForm((prev: any) => ({
+            ...prev,
+            street: streetPart || prev.street,
+            zip: zipMatch ? zipMatch[0] : prev.zip,
+            city: cityPart.replace(/\d{5}/, '').trim() || prev.city,
+          }));
+        }
+      } else {
+        setIsVatValid(false);
+      }
+    } catch (e) {
+      alert("Fehler bei der Überprüfung.");
     }
+    
     setIsFetchingVat(false);
   };
 
@@ -194,12 +205,33 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                         <div className="flex flex-col gap-2 relative group md:col-span-2">
                           <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono flex items-center gap-2">Umsatzsteuer-ID (USt-IdNr.)</label>
                           <div className="flex gap-2">
-                            <input name="vat_id" type="text" value={companyForm.vat_id} onChange={e => setCompanyForm({...companyForm, vat_id: e.target.value.toUpperCase()})} placeholder="DE123456789" className="flex-1 border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all uppercase bg-white shadow-sm" />
-                            <button type="button" onClick={handleFetchVat} disabled={isFetchingVat || !companyForm.vat_id} className="bg-action text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-action/90 shadow-sm whitespace-nowrap disabled:opacity-50">
-                              {isFetchingVat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />} Daten abrufen
+                            <input 
+                              name="vat_id" 
+                              type="text" 
+                              value={companyForm.vat_id} 
+                              onChange={e => {
+                                setCompanyForm({...companyForm, vat_id: e.target.value.toUpperCase()});
+                                setIsVatValid(null); // Reset validation on type
+                              }} 
+                              placeholder="DE123456789" 
+                              className={cn(
+                                "flex-1 border rounded-xl px-4 py-3 text-sm font-medium focus:outline-none transition-all uppercase shadow-sm",
+                                isVatValid === true ? "border-green-500 bg-green-50 text-green-900" : 
+                                isVatValid === false ? "border-red-500 bg-red-50 text-red-900" : 
+                                "border-shading/10 bg-white text-core focus:border-action/50"
+                              )} 
+                            />
+                            <button type="button" onClick={handleFetchVat} disabled={isFetchingVat || !companyForm.vat_id} className={cn(
+                              "text-white px-6 py-2 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm whitespace-nowrap disabled:opacity-50 transition-colors",
+                              isVatValid === true ? "bg-green-600 hover:bg-green-700" : "bg-core hover:bg-core/90"
+                            )}>
+                              {isFetchingVat ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+                               isVatValid === true ? <CheckCircle2 className="w-4 h-4" /> : 
+                               <Shield className="w-4 h-4" />} 
+                              {isVatValid === true ? "Gültig!" : "Gültigkeit prüfen"}
                             </button>
                           </div>
-                          <span className="text-[10px] text-core/40 ml-1">Klicke auf "Daten abrufen" um Firmenname & Adresse via EU-VIES vorauszufüllen.</span>
+                          <span className="text-[10px] text-core/40 ml-1">Klicke auf Prüfen, um die Gültigkeit der ID live über das Bundeszentralamt für Steuern zu bestätigen.</span>
                         </div>
 
                         <div className="flex flex-col gap-2 relative mt-2">
