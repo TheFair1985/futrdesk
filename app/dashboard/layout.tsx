@@ -35,7 +35,8 @@ export default async function DashboardLayout({
     onboarding_step: user.user_metadata?.onboarding_step || 1,
   };
 
-  const isSubscribed = profile?.tier && profile.tier !== 'NONE';
+  const isPaymentPendingBypass = cookieStore.get('payment_pending')?.value === 'true';
+  const isSubscribed = (profile?.tier && profile.tier !== 'NONE') || isPaymentPendingBypass;
   const hasCompanyData = profile?.company_profile?.company_name && (profile?.company_profile?.vat_id || profile?.company_profile?.tax_id);
   
   // Gatekeeper Logic:

@@ -52,12 +52,11 @@ export async function saveOnboardingStep(stepData: any) {
   return { success: true };
 }
 
-export async function markPaymentPending() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false };
+import { cookies } from "next/headers";
 
-  await supabase.from('users').update({ tier: 'PENDING' }).eq('id', user.id);
+export async function markPaymentPending() {
+  const cookieStore = await cookies();
+  cookieStore.set('payment_pending', 'true', { maxAge: 60 * 60 * 24 }); // 24 hours bypass
   
   revalidatePath('/dashboard');
   return { success: true };

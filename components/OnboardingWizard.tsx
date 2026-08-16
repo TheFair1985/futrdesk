@@ -140,12 +140,6 @@ function OnboardingContent({ profile, email }: any) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center py-20 relative">
-        <form action={logoutAction} className="absolute top-8 right-8 z-10">
-          <button type="submit" className="flex items-center gap-2 text-core/50 hover:text-action transition-colors text-xs font-bold font-mono tracking-widest uppercase">
-            <LogOut className="w-4 h-4" /> Abmelden
-          </button>
-        </form>
-
         <div className="mb-12 text-center">
           <div className="text-xl font-bold font-sans tracking-tight mb-8 text-core flex justify-center">
             <Image src="/logo.png" alt="Futrdesk Logo" width={150} height={40} priority className="mix-blend-multiply" />
