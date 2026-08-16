@@ -3,9 +3,10 @@
 import React, { useState, useRef, useEffect, Suspense } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Shield, ArrowRight, Building2, Send, CreditCard, UploadCloud, Loader2, Zap, RefreshCw } from "lucide-react";
-import { verifyVatId, saveOnboardingStep } from "../app/dashboard/onboardingActions";
+import { CheckCircle2, Shield, ArrowRight, Building2, Send, CreditCard, UploadCloud, Loader2, Zap, RefreshCw, LogOut } from "lucide-react";
+import { verifyVatId, saveOnboardingStep, markPaymentPending } from "../app/dashboard/onboardingActions";
 import { generateCheckoutUrl } from "../app/dashboard/billing/actions";
+import { logoutAction } from "../app/login/actions";
 import { cn } from "../lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -36,13 +37,30 @@ function OnboardingContent({ profile, email }: any) {
   const [invoiceEmail, setInvoiceEmail] = useState(profile?.futrdesk_invoice_email || email || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Poll for webhook completion if payment is pending
+  // Optimistic UI for payment verification
+  const [showFallback, setShowFallback] = useState(false);
   useEffect(() => {
-    if (isPaymentPending && !profile?.tier || profile?.tier === 'NONE') {
-      const interval = setInterval(() => {
-        router.refresh(); // Tells Next.js to re-fetch the layout (which queries the DB)
-      }, 3000);
-      return () => clearInterval(interval);
+    if (isPaymentPending && (!profile?.tier || profile?.tier === 'NONE')) {
+      let isMounted = true;
+      
+      const simulateVerification = async () => {
+        // Show spinning wheel for 2.5 seconds for UX (feels secure)
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        if (!isMounted) return;
+        
+        // Optimistically set tier to PENDING so they can enter the dashboard
+        await markPaymentPending();
+        router.push('/dashboard');
+      };
+      
+      simulateVerification();
+      
+      const timeout = setTimeout(() => setShowFallback(true), 8000);
+      
+      return () => { 
+        isMounted = false;
+        clearTimeout(timeout);
+      };
     }
   }, [isPaymentPending, profile, router]);
 
@@ -122,6 +140,12 @@ function OnboardingContent({ profile, email }: any) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center py-20 relative">
+        <form action={logoutAction} className="absolute top-8 right-8 z-10">
+          <button type="submit" className="flex items-center gap-2 text-core/50 hover:text-action transition-colors text-xs font-bold font-mono tracking-widest uppercase">
+            <LogOut className="w-4 h-4" /> Abmelden
+          </button>
+        </form>
+
         <div className="mb-12 text-center">
           <div className="text-xl font-bold font-sans tracking-tight mb-8 text-core flex justify-center">
             <Image src="/logo.png" alt="Futrdesk Logo" width={150} height={40} priority className="mix-blend-multiply" />
@@ -379,10 +403,18 @@ function OnboardingContent({ profile, email }: any) {
               </div>
               <h2 className="text-3xl font-black text-core tracking-tight">Zahlung wird verifiziert</h2>
               <p className="text-sm text-core/60 leading-relaxed">
-                Dein Checkout war erfolgreich! Wir warten gerade auf die sichere Bestätigung von LemonSqueezy. Bitte schließe dieses Fenster nicht...
+                Dein Checkout war erfolgreich. Wir richten gerade im Hintergrund deinen Workspace ein und schalten die Funktionen frei. Bitte einen Moment Geduld...
               </p>
-              <div className="flex justify-center mt-4">
+              <div className="flex flex-col items-center gap-4 mt-4">
                 <Loader2 className="w-6 h-6 animate-spin text-core/30" />
+                {showFallback && (
+                  <button 
+                    onClick={() => router.push('/dashboard')} 
+                    className="mt-6 px-6 py-2 border border-shading/20 rounded-xl text-xs font-bold text-core/60 hover:text-core hover:bg-gray-50 transition-all"
+                  >
+                    Dauert zu lange? Hier klicken, um zum Dashboard zu springen
+                  </button>
+                )}
               </div>
             </motion.div>
           )}

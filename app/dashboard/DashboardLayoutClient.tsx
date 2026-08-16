@@ -6,6 +6,7 @@ import { LayoutDashboard, Archive, Settings, CreditCard, LogOut } from "lucide-r
 import { cn } from "../../lib/utils";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { logoutAction } from "../../app/login/actions";
 
 const navigation = [
   { name: "Übersicht", href: "/dashboard", icon: LayoutDashboard },
@@ -119,9 +120,11 @@ export default function DashboardLayoutClient({
                 <span className="text-[10px] uppercase font-mono text-core/40">{profile?.tier || 'Pro Plan'}</span>
               </div>
             </div>
-            <button className="text-core/40 hover:text-action transition-colors">
-              <LogOut className="w-4 h-4" />
-            </button>
+            <form action={logoutAction}>
+              <button type="submit" className="text-core/40 hover:text-action transition-colors">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </form>
           </div>
         </div>
       </aside>
