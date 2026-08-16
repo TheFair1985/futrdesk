@@ -9,7 +9,6 @@ import { updateAuthEmail, updateAuthPassword, deleteAccount, triggerDataExport }
 export default function SettingsClient({ profile, email, generateCheckoutUrlAction, updateSettingsAction }: any) {
   const [activeTab, setActiveTab] = useState("company");
   const [isEditingCompany, setIsEditingCompany] = useState(false);
-  const [showReverifyModal, setShowReverifyModal] = useState(false);
   
   // Security Tab States
   const [isPending, startTransition] = useTransition();
@@ -18,6 +17,52 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [securityMessage, setSecurityMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+
+  // Company Controlled States for Auto-Fill
+  const initialCompany = profile?.company_profile || {
+    company_name: profile?.company_name || "",
+    legal_form: profile?.legal_form || "",
+    street: profile?.street || "",
+    zip: profile?.zip || "",
+    city: profile?.city || "",
+    public_email: profile?.public_email || "",
+    website: profile?.website || "",
+    phone: profile?.phone || "",
+    vat_id: profile?.vat_id || "",
+    tax_id: profile?.tax_id || "",
+    commercial_register: profile?.commercial_register || ""
+  };
+  const [companyForm, setCompanyForm] = useState(initialCompany);
+  const [isFetchingVat, setIsFetchingVat] = useState(false);
+
+  const handleFetchVat = async () => {
+    if (!companyForm.vat_id) return;
+    setIsFetchingVat(true);
+    // Dynamically import the action to avoid client/server component module scope issues
+    const { verifyVatId } = await import('../onboardingActions');
+    const res = await verifyVatId(companyForm.vat_id);
+    if (res.success && res.company) {
+      // Very basic address parser for EU VIES format
+      const parts = res.company.address ? res.company.address.split('\n') : [];
+      const streetPart = parts[0] || '';
+      const cityPart = parts[1] || '';
+      
+      const zipMatch = cityPart.match(/\d{5}/);
+      const zip = zipMatch ? zipMatch[0] : '';
+      const city = cityPart.replace(/\d{5}/, '').trim();
+
+      setCompanyForm((prev: any) => ({
+        ...prev,
+        company_name: res.company.name || prev.company_name,
+        street: streetPart || prev.street,
+        zip: zip || prev.zip,
+        city: city || prev.city,
+      }));
+    } else {
+      alert("USt-IdNr. konnte nicht automatisch abgerufen werden. Bitte manuell eintragen.");
+    }
+    setIsFetchingVat(false);
+  };
 
   const handleSecurityAction = (action: () => Promise<{success?: string, error?: string}>) => {
     setSecurityMessage(null);
@@ -31,7 +76,6 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
       setNewEmail("");
       setNewPassword("");
       
-      // Auto-clear success message after 5s
       if (res.success) setTimeout(() => setSecurityMessage(null), 5000);
     });
   };
@@ -44,7 +88,6 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
     { id: "workflow", label: "Automatisierung", icon: Send },
   ];
 
-  // Calculate storage metrics
   const storageBytes = profile?.storage_used_bytes || 0;
   const usedMB = (storageBytes / (1024 * 1024)).toFixed(1);
   const tier = profile?.tier || 'STARTER';
@@ -52,23 +95,6 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
   if (tier === 'PRO') totalMB = 3000;
   if (tier === 'BUSINESS') totalMB = 5000;
   const percentage = Math.min(100, Math.max(0, (Number(usedMB) / totalMB) * 100));
-
-  // Company Profile defaults (falling back to JSON if available, otherwise flat columns)
-  const company = profile?.company_profile || {
-    company_name: profile?.company_name || "",
-    legal_form: profile?.legal_form || "",
-    street: profile?.street || "",
-    zip: profile?.zip || "",
-    city: profile?.city || "",
-    public_email: profile?.public_email || "",
-    website: profile?.website || "",
-    phone: profile?.phone || "",
-    vat_id: profile?.vat_id || "",
-    tax_id: profile?.tax_id || "",
-    commercial_register: profile?.commercial_register || ""
-  };
-
-  const isVerified = company.vat_id || profile?.verification_status === 'verified';
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 pb-20 w-full max-w-6xl mx-auto">
@@ -100,44 +126,6 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
 
       {/* CONTENT AREA */}
       <div className="flex-1 w-full bg-transparent relative">
-        
-        {/* REVERIFY MODAL */}
-        <AnimatePresence>
-          {showReverifyModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="absolute inset-0 bg-core/80 backdrop-blur-sm" onClick={() => setShowReverifyModal(false)} />
-              <motion.div initial={{opacity: 0, scale: 0.9}} animate={{opacity: 1, scale: 1}} exit={{opacity: 0, scale: 0.9}} className="bg-white rounded-3xl p-8 max-w-lg w-full relative z-10 shadow-2xl flex flex-col gap-6 border border-shading/10">
-                <div className="w-16 h-16 bg-action/10 rounded-2xl flex items-center justify-center text-action">
-                  <Shield className="w-8 h-8" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-black text-core uppercase tracking-tight mb-2">Änderungsantrag & Re-Verifizierung</h3>
-                  <p className="text-sm text-core/60 leading-relaxed">
-                    Das Ändern deiner Stammdaten (Firmenname, Rechtsform, Adresse, USt-IdNr.) hebt den <strong className="text-core">verifizierten Status</strong> deines Accounts sofort auf, da die Identität neu geprüft werden muss. 
-                    Ohne gültige Verifizierung können keine rechtssicheren ZUGFeRD Belege versendet werden.
-                  </p>
-                </div>
-                
-                <div className="bg-gray-50 border border-shading/10 rounded-2xl p-5 flex flex-col gap-3">
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Verifizierungs-Methoden:</span>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-3 text-sm font-bold text-core"><CheckCircle2 className="w-4 h-4 text-green-500"/> Echtzeit-Check via EU-VIES (USt-IdNr.)</div>
-                    <div className="flex items-center gap-3 text-sm font-bold text-core"><CheckCircle2 className="w-4 h-4 text-green-500"/> Handelsregisterabfrage (Live)</div>
-                    <div className="flex items-center gap-3 text-sm font-bold text-core"><CheckCircle2 className="w-4 h-4 text-green-500"/> KI-Gewerbeschein-Prüfung (3 Sek)</div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 mt-4">
-                  <button onClick={() => setShowReverifyModal(false)} className="px-6 py-3 rounded-xl font-bold text-core hover:bg-gray-100 transition-colors">Abbrechen</button>
-                  <button onClick={() => { setShowReverifyModal(false); setIsEditingCompany(true); }} className="px-6 py-3 rounded-xl font-bold bg-core text-white hover:bg-core/90 transition-colors shadow-sm flex items-center gap-2">
-                    Fortfahren <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -146,61 +134,10 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
-            
-            {/* TAB: COMPANY (VERIFIZIERUNG & BRIEFKOPF) */}
+            {/* TAB: COMPANY (BRIEFKOPF) */}
             {activeTab === "company" && (
               <div className="flex flex-col gap-8">
                 
-                {/* STATUS & KYB */}
-                <div className="bg-white border border-shading/10 rounded-3xl p-8 shadow-[0_2px_20px_rgb(0,0,0,0.02)] flex flex-col gap-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-core/50">
-                        <Shield className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-black text-core uppercase tracking-tight">Identitätsprüfung</h2>
-                        <p className="text-xs font-mono text-core/40">Notwendig für den Versand von ZUGFeRD-Belegen</p>
-                      </div>
-                    </div>
-                    {isVerified ? (
-                      <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-200">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest font-mono">Verifiziert via VIES</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-xl border border-amber-200">
-                        <AlertTriangle className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest font-mono">Verifizierung ausstehend</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {isVerified && (
-                    <div className="bg-gray-50 p-5 rounded-2xl border border-shading/10 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-core">Dein Unternehmen ist vollständig legitimiert.</span>
-                        <span className="text-xs text-core/60 mt-1">Letzte Prüfung: Heute. Methode: USt-IdNr. Live-Datenbank.</span>
-                      </div>
-                      <button onClick={() => setShowReverifyModal(true)} className="px-4 py-2 bg-white border border-shading/10 hover:bg-gray-100 transition-colors rounded-xl text-xs font-bold text-core shadow-sm">
-                        Re-Verifizierung starten
-                      </button>
-                    </div>
-                  )}
-
-                  {!isVerified && (
-                    <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-amber-800">Achtung: Eingeschränkter Account</span>
-                        <span className="text-xs text-amber-700/80 mt-1">Hinterlege jetzt deine USt-IdNr. um deinen Account freizuschalten.</span>
-                      </div>
-                      <button onClick={() => setIsEditingCompany(true)} className="px-4 py-2 bg-amber-500 text-white hover:bg-amber-600 transition-colors rounded-xl text-xs font-bold shadow-sm">
-                        Jetzt verifizieren
-                      </button>
-                    </div>
-                  )}
-                </div>
-
                 {/* BRIEFKOPF VORSCHAU */}
                 <div className="bg-white border border-shading/10 rounded-3xl p-8 shadow-[0_2px_20px_rgb(0,0,0,0.02)] flex flex-col gap-8">
                   <div className="flex items-center justify-between mb-2">
@@ -209,13 +146,13 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                         <FileText className="w-6 h-6" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-black text-core uppercase tracking-tight">Briefkopf Vorschau</h2>
-                        <p className="text-xs font-mono text-core/40">Dein digitales ZUGFeRD-Layout</p>
+                        <h2 className="text-xl font-black text-core uppercase tracking-tight">Dein Briefkopf</h2>
+                        <p className="text-xs font-mono text-core/40">Alle rechtlichen Daten für deine Rechnungen</p>
                       </div>
                     </div>
                     {!isEditingCompany && (
                       <button onClick={() => setIsEditingCompany(true)} className="px-4 py-2 border border-shading/10 rounded-xl font-bold text-xs uppercase tracking-widest text-core hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-2">
-                        <Unlock className="w-3.5 h-3.5" /> Bearbeiten
+                        Bearbeiten
                       </button>
                     )}
                   </div>
@@ -226,18 +163,18 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                       <div className="absolute top-0 right-0 bg-gray-200 text-core/40 font-mono text-[10px] uppercase font-bold px-3 py-1 rounded-bl-lg">Vorschau</div>
                       
                       <div className="flex flex-col gap-1 mb-8">
-                        <span className="text-xl font-black text-core font-sans tracking-tight">{company.company_name || 'Musterfirma'} {company.legal_form}</span>
-                        <span className="text-core/60">{company.street || 'Musterstraße 1'}</span>
-                        <span className="text-core/60">{company.zip || '10115'} {company.city || 'Berlin'}</span>
+                        <span className="text-xl font-black text-core font-sans tracking-tight">{initialCompany.company_name || 'Musterfirma'} {initialCompany.legal_form}</span>
+                        <span className="text-core/60">{initialCompany.street || 'Musterstraße 1'}</span>
+                        <span className="text-core/60">{initialCompany.zip || '10115'} {initialCompany.city || 'Berlin'}</span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-y-2 max-w-lg text-xs text-core/50">
-                        <div><span className="font-bold text-core/70">USt-IdNr.:</span> {company.vat_id || '-'}</div>
-                        <div><span className="font-bold text-core/70">E-Mail:</span> {company.public_email || '-'}</div>
-                        <div><span className="font-bold text-core/70">Steuernummer:</span> {company.tax_id || '-'}</div>
-                        <div><span className="font-bold text-core/70">Tel:</span> {company.phone || '-'}</div>
-                        <div><span className="font-bold text-core/70">Register:</span> {company.commercial_register || '-'}</div>
-                        <div><span className="font-bold text-core/70">Web:</span> {company.website || '-'}</div>
+                        <div><span className="font-bold text-core/70">USt-IdNr.:</span> {initialCompany.vat_id || '-'}</div>
+                        <div><span className="font-bold text-core/70">E-Mail:</span> {initialCompany.public_email || '-'}</div>
+                        <div><span className="font-bold text-core/70">Steuernummer:</span> {initialCompany.tax_id || '-'}</div>
+                        <div><span className="font-bold text-core/70">Tel:</span> {initialCompany.phone || '-'}</div>
+                        <div><span className="font-bold text-core/70">Register:</span> {initialCompany.commercial_register || '-'}</div>
+                        <div><span className="font-bold text-core/70">Web:</span> {initialCompany.website || '-'}</div>
                       </div>
                     </div>
                   ) : (
@@ -245,64 +182,69 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                     <form action={updateSettingsAction} className="flex flex-col gap-8 bg-gray-50 p-6 rounded-2xl border border-shading/10 shadow-inner">
                       <input type="hidden" name="form_type" value="company_profile" />
                       
-                      {isVerified && (
-                        <div className="bg-white p-4 rounded-xl border border-amber-200 flex items-start gap-3">
-                          <Lock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                          <div className="flex flex-col">
-                            <span className="font-bold text-sm text-core">Stammdaten sind gesperrt</span>
-                            <span className="text-xs text-core/60">Da dein Unternehmen verifiziert ist, können diese Felder nur über eine Re-Verifizierung geändert werden. Sonstige Kontaktdaten kannst du frei anpassen.</span>
-                          </div>
+                      <div className="bg-white p-4 rounded-xl border border-action/20 flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-action shrink-0 mt-0.5" />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-core">Du bist rechtlich verantwortlich!</span>
+                          <span className="text-xs text-core/60">Die korrekte Angabe dieser Daten ist essenziell für die Rechtsgültigkeit deiner Dokumente (z.B. ZUGFeRD). Bitte prüfe alle Felder sorgfältig.</span>
                         </div>
-                      )}
+                      </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="flex flex-col gap-2 relative">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono flex items-center gap-2">Firmenname {isVerified && <Lock className="w-3 h-3 text-core/30"/>}</label>
-                          <input name="company_name" type="text" defaultValue={company.company_name} readOnly={isVerified} className={cn("w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all", isVerified ? "bg-gray-100/50 cursor-not-allowed text-core/50" : "bg-white shadow-sm")} />
+                        <div className="flex flex-col gap-2 relative group md:col-span-2">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono flex items-center gap-2">Umsatzsteuer-ID (USt-IdNr.)</label>
+                          <div className="flex gap-2">
+                            <input name="vat_id" type="text" value={companyForm.vat_id} onChange={e => setCompanyForm({...companyForm, vat_id: e.target.value.toUpperCase()})} placeholder="DE123456789" className="flex-1 border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all uppercase bg-white shadow-sm" />
+                            <button type="button" onClick={handleFetchVat} disabled={isFetchingVat || !companyForm.vat_id} className="bg-action text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-action/90 shadow-sm whitespace-nowrap disabled:opacity-50">
+                              {isFetchingVat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />} Daten abrufen
+                            </button>
+                          </div>
+                          <span className="text-[10px] text-core/40 ml-1">Klicke auf "Daten abrufen" um Firmenname & Adresse via EU-VIES vorauszufüllen.</span>
                         </div>
-                        <div className="flex flex-col gap-2">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono flex items-center gap-2">Rechtsform {isVerified && <Lock className="w-3 h-3 text-core/30"/>}</label>
-                          <input name="legal_form" type="text" defaultValue={company.legal_form} readOnly={isVerified} className={cn("w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all", isVerified ? "bg-gray-100/50 cursor-not-allowed text-core/50" : "bg-white shadow-sm")} />
+
+                        <div className="flex flex-col gap-2 relative mt-2">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Firmenname</label>
+                          <input name="company_name" type="text" value={companyForm.company_name} onChange={e => setCompanyForm({...companyForm, company_name: e.target.value})} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all bg-white shadow-sm" />
+                        </div>
+                        <div className="flex flex-col gap-2 mt-2">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Rechtsform</label>
+                          <input name="legal_form" type="text" value={companyForm.legal_form} onChange={e => setCompanyForm({...companyForm, legal_form: e.target.value})} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all bg-white shadow-sm" />
                         </div>
                         
                         <div className="flex flex-col gap-2 md:col-span-2">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono flex items-center gap-2">Straße & Hausnummer {isVerified && <Lock className="w-3 h-3 text-core/30"/>}</label>
-                          <input name="street" type="text" defaultValue={company.street} readOnly={isVerified} className={cn("w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all", isVerified ? "bg-gray-100/50 cursor-not-allowed text-core/50" : "bg-white shadow-sm")} />
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Straße & Hausnummer</label>
+                          <input name="street" type="text" value={companyForm.street} onChange={e => setCompanyForm({...companyForm, street: e.target.value})} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all bg-white shadow-sm" />
                         </div>
                         <div className="flex flex-col gap-2">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono flex items-center gap-2">PLZ {isVerified && <Lock className="w-3 h-3 text-core/30"/>}</label>
-                          <input name="zip" type="text" defaultValue={company.zip} readOnly={isVerified} className={cn("w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all", isVerified ? "bg-gray-100/50 cursor-not-allowed text-core/50" : "bg-white shadow-sm")} />
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">PLZ</label>
+                          <input name="zip" type="text" value={companyForm.zip} onChange={e => setCompanyForm({...companyForm, zip: e.target.value})} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all bg-white shadow-sm" />
                         </div>
                         <div className="flex flex-col gap-2">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono flex items-center gap-2">Stadt {isVerified && <Lock className="w-3 h-3 text-core/30"/>}</label>
-                          <input name="city" type="text" defaultValue={company.city} readOnly={isVerified} className={cn("w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all", isVerified ? "bg-gray-100/50 cursor-not-allowed text-core/50" : "bg-white shadow-sm")} />
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Stadt</label>
+                          <input name="city" type="text" value={companyForm.city} onChange={e => setCompanyForm({...companyForm, city: e.target.value})} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all bg-white shadow-sm" />
                         </div>
                         
-                        <div className="flex flex-col gap-2 relative group">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono flex items-center gap-2">Umsatzsteuer-ID (USt-IdNr.) {isVerified && <Lock className="w-3 h-3 text-core/30"/>}</label>
-                          <input name="vat_id" type="text" defaultValue={company.vat_id} readOnly={isVerified} placeholder="DE123456789" className={cn("w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all uppercase", isVerified ? "bg-gray-100/50 cursor-not-allowed text-core/50" : "bg-white shadow-sm")} />
-                        </div>
                         <div className="flex flex-col gap-2">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono flex items-center gap-2">Steuernummer {isVerified && <Lock className="w-3 h-3 text-core/30"/>}</label>
-                          <input name="tax_id" type="text" defaultValue={company.tax_id} readOnly={isVerified} className={cn("w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all", isVerified ? "bg-gray-100/50 cursor-not-allowed text-core/50" : "bg-white shadow-sm")} />
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">Steuernummer</label>
+                          <input name="tax_id" type="text" value={companyForm.tax_id} onChange={e => setCompanyForm({...companyForm, tax_id: e.target.value})} className="w-full border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all bg-white shadow-sm" />
                         </div>
 
                         {/* Editable contact fields */}
                         <div className="flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold tracking-widest text-action font-mono">Öffentliche E-Mail</label>
-                          <input name="public_email" type="email" defaultValue={company.public_email} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
+                          <input name="public_email" type="email" value={companyForm.public_email} onChange={e => setCompanyForm({...companyForm, public_email: e.target.value})} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
                         </div>
                         <div className="flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold tracking-widest text-action font-mono">Website</label>
-                          <input name="website" type="url" defaultValue={company.website} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
+                          <input name="website" type="url" value={companyForm.website} onChange={e => setCompanyForm({...companyForm, website: e.target.value})} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
                         </div>
                         <div className="flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold tracking-widest text-action font-mono">Telefon</label>
-                          <input name="phone" type="tel" defaultValue={company.phone} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
+                          <input name="phone" type="tel" value={companyForm.phone} onChange={e => setCompanyForm({...companyForm, phone: e.target.value})} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
                         </div>
                         <div className="flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold tracking-widest text-action font-mono">Handelsregister (optional)</label>
-                          <input name="commercial_register" type="text" defaultValue={company.commercial_register} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
+                          <input name="commercial_register" type="text" value={companyForm.commercial_register} onChange={e => setCompanyForm({...companyForm, commercial_register: e.target.value})} className="w-full bg-white shadow-sm border border-shading/10 rounded-xl px-4 py-3 text-sm font-medium text-core focus:outline-none focus:border-action/50 transition-all" />
                         </div>
                       </div>
 
