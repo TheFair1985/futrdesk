@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, CreditCard, Send, HardDrive, Zap, Layers, Mail, Archive as ArchiveIcon, Save, Building2, Shield, AlertTriangle, Key, CheckCircle2, FileText, Lock, Unlock, ArrowRight, Loader2 } from "lucide-react";
+import { User, CreditCard, Send, HardDrive, Zap, Layers, Mail, Archive as ArchiveIcon, Save, Building2, Shield, AlertTriangle, Key, CheckCircle2, FileText, Lock, Unlock, ArrowRight, Loader2, QrCode } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { updateAuthEmail, updateAuthPassword, deleteAccount, triggerDataExport } from "./securityActions";
+import { createClient } from "../../../lib/supabase/client";
+import { QRCodeSVG } from "qrcode.react";
 
 export default function SettingsClient({ profile, email, generateCheckoutUrlAction, updateSettingsAction }: any) {
   const [activeTab, setActiveTab] = useState("company");
@@ -17,6 +19,44 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [securityMessage, setSecurityMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+
+  // 2FA States
+  const [is2FAEnabled, setIs2FAEnabled] = useState<boolean>(false);
+  const [isSettingUp2FA, setIsSettingUp2FA] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<{ qr_code: string, secret: string } | null>(null);
+  const [factorId, setFactorId] = useState<string | null>(null);
+  const [totpCode, setTotpCode] = useState("");
+  const [twoFaLoading, setTwoFaLoading] = useState(false);
+  const supabase = createClient();
+
+  // Check 2FA Status
+  useEffect(() => {
+    async function checkMFA() {
+      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (!error && data) {
+        // nextLevel indicates if a stronger factor is enrolled but not yet verified in this session
+        // currentLevel indicates the current session's level
+        // To accurately check if TOTP is enrolled:
+        const factors = await supabase.auth.mfa.listFactors();
+        if (factors.data && factors.data.totp.length > 0) {
+          setIs2FAEnabled(true);
+        }
+      }
+    }
+    checkMFA();
+  }, [supabase]);
+
+  const getPasswordStrength = (pass: string) => {
+    let score = 0;
+    if (pass.length > 0) score = 1;
+    if (pass.length >= 8) score++;
+    if (pass.length >= 12) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+    return Math.min(5, score);
+  };
+  const strengthScore = getPasswordStrength(newPassword);
 
   // Company Profile defaults
   const initialCompany = profile?.company_profile || {
@@ -78,6 +118,60 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
     }
     
     setIsFetchingVat(false);
+  };
+
+  const handleEnroll2FA = async () => {
+    setTwoFaLoading(true);
+    setSecurityMessage(null);
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+    if (error) {
+      setSecurityMessage({ type: 'error', text: "Fehler beim Starten der 2FA-Einrichtung." });
+    } else if (data) {
+      setFactorId(data.id);
+      setQrCodeData({ qr_code: data.totp.qr_code, secret: data.totp.secret });
+      setIsSettingUp2FA(true);
+    }
+    setTwoFaLoading(false);
+  };
+
+  const handleVerify2FA = async () => {
+    if (!factorId || totpCode.length < 6) return;
+    setTwoFaLoading(true);
+    setSecurityMessage(null);
+    
+    const challenge = await supabase.auth.mfa.challenge({ factorId });
+    if (challenge.error) {
+      setSecurityMessage({ type: 'error', text: "Challenge fehlgeschlagen." });
+      setTwoFaLoading(false);
+      return;
+    }
+    
+    const verify = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.data.id, code: totpCode });
+    if (verify.error) {
+      setSecurityMessage({ type: 'error', text: "Der Code ist falsch. Bitte erneut versuchen." });
+    } else {
+      setIs2FAEnabled(true);
+      setIsSettingUp2FA(false);
+      setSecurityMessage({ type: 'success', text: "Zwei-Faktor-Authentifizierung erfolgreich aktiviert!" });
+    }
+    setTwoFaLoading(false);
+  };
+
+  const handleDisable2FA = async () => {
+    if (!confirm("Bist du sicher, dass du 2FA deaktivieren möchtest? Dein Account ist dann weniger geschützt.")) return;
+    setTwoFaLoading(true);
+    const factors = await supabase.auth.mfa.listFactors();
+    const totpFactor = factors.data?.totp[0];
+    if (totpFactor) {
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: totpFactor.id });
+      if (!error) {
+        setIs2FAEnabled(false);
+        setSecurityMessage({ type: 'success', text: "2FA wurde deaktiviert." });
+      } else {
+        setSecurityMessage({ type: 'error', text: "Fehler beim Deaktivieren von 2FA." });
+      }
+    }
+    setTwoFaLoading(false);
   };
 
   const handleSecurityAction = (action: () => Promise<{success?: string, error?: string}>) => {
@@ -400,9 +494,22 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                         <div className="flex flex-col gap-3">
                           <label className="text-[10px] uppercase font-bold tracking-widest text-action font-mono">Neues Passwort</label>
                           <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 8 Zeichen" className="w-full border border-shading/10 rounded-xl px-3 py-2 text-sm text-core focus:border-action/50 focus:outline-none" />
-                          <div className="flex gap-2">
-                            <button onClick={() => setEditingPassword(false)} className="px-3 py-2 text-xs font-bold text-core/60 hover:text-core">Abbrechen</button>
-                            <button disabled={isPending || newPassword.length < 6} onClick={() => handleSecurityAction(() => updateAuthPassword(newPassword))} className="px-3 py-2 text-xs font-bold bg-core text-white rounded-lg flex items-center gap-2">
+                          
+                          {/* PASSWORD STRENGTH INDICATOR */}
+                          {newPassword.length > 0 && (
+                            <div className="flex flex-col gap-1 mt-1">
+                              <div className="flex gap-1 h-1 w-full rounded-full overflow-hidden bg-gray-200">
+                                <div className={cn("h-full transition-all duration-300", strengthScore < 2 ? "bg-red-500 w-1/3" : strengthScore < 4 ? "bg-yellow-500 w-2/3" : "bg-green-500 w-full")} />
+                              </div>
+                              <span className={cn("text-[10px] font-bold font-mono uppercase tracking-widest", strengthScore < 2 ? "text-red-500" : strengthScore < 4 ? "text-yellow-600" : "text-green-600")}>
+                                {strengthScore < 2 ? "Schwach" : strengthScore < 4 ? "Gut" : "Stark"}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 mt-1">
+                            <button onClick={() => { setEditingPassword(false); setNewPassword(""); }} className="px-3 py-2 text-xs font-bold text-core/60 hover:text-core">Abbrechen</button>
+                            <button disabled={isPending || newPassword.length < 8} onClick={() => handleSecurityAction(() => updateAuthPassword(newPassword))} className="px-3 py-2 text-xs font-bold bg-core text-white rounded-lg flex items-center gap-2">
                               {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Speichern
                             </button>
                           </div>
@@ -411,15 +518,67 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                     </div>
                   </div>
                   
-                  <div className="p-5 rounded-2xl border border-shading/10 bg-white flex items-center justify-between opacity-50 grayscale pointer-events-none">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-core text-sm">Zwei-Faktor-Authentifizierung (2FA)</span>
-                      <span className="text-xs text-core/60 mt-1">Schütze deinen Account zusätzlich mit einer Authenticator-App. (In Kürze verfügbar)</span>
+                  {/* 2FA SECTION */}
+                  {!isSettingUp2FA ? (
+                    <div className={cn("p-5 rounded-2xl border flex items-center justify-between", is2FAEnabled ? "bg-green-50/50 border-green-200" : "bg-white border-shading/10")}>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-core text-sm flex items-center gap-2">
+                          Zwei-Faktor-Authentifizierung (2FA)
+                          {is2FAEnabled && <span className="bg-green-100 text-green-700 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full font-mono">Aktiv</span>}
+                        </span>
+                        <span className="text-xs text-core/60 mt-1">
+                          {is2FAEnabled ? "Dein Account ist zusätzlich durch eine Authenticator-App geschützt." : "Schütze deinen Account zusätzlich mit einer Authenticator-App (z.B. Google Authenticator)."}
+                        </span>
+                      </div>
+                      {is2FAEnabled ? (
+                        <button disabled={twoFaLoading} onClick={handleDisable2FA} className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs uppercase tracking-widest rounded-lg shadow-sm flex items-center gap-2 transition-colors">
+                          {twoFaLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Deaktivieren"}
+                        </button>
+                      ) : (
+                        <button disabled={twoFaLoading} onClick={handleEnroll2FA} className="px-4 py-2 bg-core text-white font-bold text-xs uppercase tracking-widest rounded-lg shadow-sm flex items-center gap-2">
+                          {twoFaLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Aktivieren"}
+                        </button>
+                      )}
                     </div>
-                    <button className="px-4 py-2 bg-core text-white font-bold text-xs uppercase tracking-widest rounded-lg shadow-sm">
-                      Aktivieren
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="p-6 rounded-2xl border border-action/20 bg-action/5 flex flex-col gap-6">
+                      <div className="flex items-center gap-3 border-b border-action/10 pb-4">
+                        <QrCode className="w-6 h-6 text-action" />
+                        <div>
+                          <h3 className="font-bold text-core">2FA Einrichten</h3>
+                          <p className="text-xs text-core/60">Scanne diesen QR-Code mit deiner Authenticator App (Google Authenticator, Authy, Apple Passwörter).</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col md:flex-row gap-8 items-center">
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-shading/10">
+                          {qrCodeData?.qr_code ? (
+                            <QRCodeSVG value={qrCodeData.qr_code} size={150} level={"H"} />
+                          ) : (
+                            <div className="w-[150px] h-[150px] bg-gray-100 animate-pulse rounded-lg" />
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-4 w-full max-w-xs">
+                          <div className="flex flex-col gap-2">
+                            <label className="text-[10px] uppercase font-bold tracking-widest text-core/50 font-mono">6-stelliger Code</label>
+                            <input 
+                              type="text" 
+                              value={totpCode} 
+                              onChange={e => setTotpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))} 
+                              placeholder="123456" 
+                              className="w-full border border-shading/10 rounded-xl px-4 py-3 text-2xl tracking-[0.5em] font-mono text-center focus:border-action focus:ring-2 focus:ring-action/20 focus:outline-none bg-white"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button disabled={twoFaLoading} onClick={() => setIsSettingUp2FA(false)} className="flex-1 px-3 py-3 text-xs font-bold text-core/60 hover:text-core bg-white border border-shading/10 rounded-xl">Abbrechen</button>
+                            <button disabled={twoFaLoading || totpCode.length !== 6} onClick={handleVerify2FA} className="flex-1 px-3 py-3 text-xs font-bold bg-action text-white rounded-xl shadow-sm hover:bg-action/90 flex items-center justify-center gap-2">
+                              {twoFaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Bestätigen"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* DANGER ZONE */}
@@ -448,18 +607,18 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                     <div className="flex items-center justify-between p-4 border border-red-200 rounded-xl bg-red-50/50">
                       <div className="flex flex-col">
                         <span className="font-bold text-red-600 text-sm">Account endgültig löschen</span>
-                        <span className="text-xs text-red-500/70">Dies löscht alle deine Daten unwiderruflich. Dein Abo wird sofort gekündigt.</span>
+                        <span className="text-xs text-red-600/70 mt-1 max-w-sm">Dein Account und alle Metadaten werden dauerhaft entfernt. <strong>Wichtig:</strong> Du erhältst unmittelbar vor der Löschung automatisch einen vollständigen Daten-Dump an deine E-Mail-Adresse.</span>
                       </div>
                       <button 
                         disabled={isPending} 
                         onClick={() => {
-                          if(window.confirm("Bist du sicher, dass du deinen Account komplett löschen möchtest? Dies kann nicht rückgängig gemacht werden!")) {
+                          if(window.confirm("Dies kann nicht rückgängig gemacht werden. Dein Account wird sofort gelöscht und du wirst abgemeldet. Ein finaler Daten-Export wird dir per E-Mail gesendet. Fortfahren?")) {
                             handleSecurityAction(deleteAccount);
                           }
                         }} 
                         className="px-4 py-2 bg-red-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-red-700 transition-colors shadow-sm flex items-center gap-2"
                       >
-                        {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Löschen"}
+                        {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Account Löschen"}
                       </button>
                     </div>
                   </div>
