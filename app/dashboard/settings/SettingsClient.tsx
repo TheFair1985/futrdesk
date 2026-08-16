@@ -129,7 +129,7 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
       const factors = await supabase.auth.mfa.listFactors();
       if (factors.data && factors.data.totp.length > 0) {
         for (const factor of factors.data.totp) {
-          if (factor.status === 'unverified') {
+          if ((factor as any).status === 'unverified') {
             await supabase.auth.mfa.unenroll({ factorId: factor.id });
           }
         }
