@@ -53,7 +53,10 @@ export async function saveOnboardingStep(stepData: any) {
   
   if (Object.keys(flatUpdates).length > 0) {
     const admin = getSupabaseAdmin();
-    await admin.from('users').update(flatUpdates).eq('id', user.id);
+    const { error } = await admin.from('users').update(flatUpdates).eq('id', user.id);
+    if (error) {
+      console.error("ADMIN DB UPDATE FAILED:", error);
+    }
   }
 
   revalidatePath('/dashboard');

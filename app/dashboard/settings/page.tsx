@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
 import SettingsClient from "./SettingsClient"
@@ -52,6 +53,11 @@ export default async function SettingsPage() {
     
     const formType = formData.get('form_type');
 
+    const admin = createAdminClient(
+      (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PROJECT_URL)!,
+      process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY!
+    );
+
     if (formType === 'company_profile') {
       const companyData = {
         company_name: formData.get('company_name'),
@@ -74,24 +80,27 @@ export default async function SettingsPage() {
         data: { company_profile: companyData }
       });
 
-      // 2. Also try updating the public.users flat column if it exists
-      await supabase.from('users').update({
+      // 2. Update the public.users flat column securely bypassing RLS
+      const { error } = await admin.from('users').update({
         company_name: formData.get('company_name'),
       }).eq('id', user.id);
+      if (error) console.error("Admin DB Update Failed (Settings):", error);
     } 
     else if (formType === 'billing') {
-      await supabase.from('users').update({
+      const { error } = await admin.from('users').update({
         futrdesk_invoice_email: formData.get('futrdesk_invoice_email'),
         department: formData.get('department'),
         cost_center: formData.get('cost_center'),
       }).eq('id', user.id);
+      if (error) console.error("Admin DB Update Failed (Billing Settings):", error);
     }
     else if (formType === 'workflow') {
-      await supabase.from('users').update({
+      const { error } = await admin.from('users').update({
         auto_send_invoices: formData.get('auto_send_invoices') === 'on',
         export_target: formData.get('export_target'),
         export_email: formData.get('export_email'),
       }).eq('id', user.id);
+      if (error) console.error("Admin DB Update Failed (Workflow Settings):", error);
     }
     
     revalidatePath('/dashboard/settings');

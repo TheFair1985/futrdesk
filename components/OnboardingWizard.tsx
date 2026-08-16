@@ -99,7 +99,7 @@ function OnboardingContent({ profile, email }: any) {
     await saveOnboardingStep({
       company_profile: {
         vat_id: companyData?.vat_id || vatInput,
-        company_name: companyData?.name || companyData?.company_name,
+        company_name: companyData?.company_name || companyData?.name,
         address: companyData?.address || "",
         legal_form: companyData?.legal_form || "",
         tax_id: companyData?.tax_id || ""
