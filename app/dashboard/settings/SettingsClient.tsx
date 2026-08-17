@@ -19,31 +19,6 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
   const [newPassword, setNewPassword] = useState("");
   const [securityMessage, setSecurityMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
-  // 2FA States
-  const [is2FAEnabled, setIs2FAEnabled] = useState<boolean>(false);
-  const [isSettingUp2FA, setIsSettingUp2FA] = useState(false);
-  const [qrCodeData, setQrCodeData] = useState<{ qr_code: string, secret: string } | null>(null);
-  const [factorId, setFactorId] = useState<string | null>(null);
-  const [totpCode, setTotpCode] = useState("");
-  const [twoFaLoading, setTwoFaLoading] = useState(false);
-  const supabase = createClient();
-
-  // Check 2FA Status
-  useEffect(() => {
-    async function checkMFA() {
-      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (!error && data) {
-        // nextLevel indicates if a stronger factor is enrolled but not yet verified in this session
-        // currentLevel indicates the current session's level
-        // To accurately check if TOTP is enrolled:
-        const factors = await supabase.auth.mfa.listFactors();
-        if (factors.data && factors.data.totp.length > 0) {
-          setIs2FAEnabled(true);
-        }
-      }
-    }
-    checkMFA();
-  }, [supabase]);
 
   const getPasswordStrength = (pass: string) => {
     let score = 0;
@@ -119,79 +94,7 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
     setIsFetchingVat(false);
   };
 
-  const handleEnroll2FA = async () => {
-    setTwoFaLoading(true);
-    setSecurityMessage(null);
-    
-    try {
-      // 1. Cleanup stale unverified factors to prevent "already exists" error
-      const factors = await supabase.auth.mfa.listFactors();
-      if (factors.data && factors.data.totp.length > 0) {
-        for (const factor of factors.data.totp) {
-          if ((factor as any).status === 'unverified') {
-            await supabase.auth.mfa.unenroll({ factorId: factor.id });
-          }
-        }
-      }
 
-      // 2. Start fresh enrollment
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
-      if (error) {
-        let msg = error.message;
-        if (msg.includes("MFA is not enabled")) msg = "2FA ist in den Supabase Projekteinstellungen noch deaktiviert.";
-        if (msg.includes("session")) msg = "Deine Sitzung ist abgelaufen. Bitte logge dich neu ein.";
-        setSecurityMessage({ type: 'error', text: `Fehler: ${msg}` });
-      } else if (data) {
-        setFactorId(data.id);
-        setQrCodeData({ qr_code: data.totp.qr_code, secret: data.totp.secret });
-        setIsSettingUp2FA(true);
-      }
-    } catch (err: any) {
-      setSecurityMessage({ type: 'error', text: "Unerwarteter Fehler bei der 2FA Einrichtung." });
-    }
-    
-    setTwoFaLoading(false);
-  };
-
-  const handleVerify2FA = async () => {
-    if (!factorId || totpCode.length < 6) return;
-    setTwoFaLoading(true);
-    setSecurityMessage(null);
-    
-    const challenge = await supabase.auth.mfa.challenge({ factorId });
-    if (challenge.error) {
-      setSecurityMessage({ type: 'error', text: "Challenge fehlgeschlagen." });
-      setTwoFaLoading(false);
-      return;
-    }
-    
-    const verify = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.data.id, code: totpCode });
-    if (verify.error) {
-      setSecurityMessage({ type: 'error', text: "Der Code ist falsch. Bitte erneut versuchen." });
-    } else {
-      setIs2FAEnabled(true);
-      setIsSettingUp2FA(false);
-      setSecurityMessage({ type: 'success', text: "Zwei-Faktor-Authentifizierung erfolgreich aktiviert!" });
-    }
-    setTwoFaLoading(false);
-  };
-
-  const handleDisable2FA = async () => {
-    if (!confirm("Bist du sicher, dass du 2FA deaktivieren möchtest? Dein Account ist dann weniger geschützt.")) return;
-    setTwoFaLoading(true);
-    const factors = await supabase.auth.mfa.listFactors();
-    const totpFactor = factors.data?.totp[0];
-    if (totpFactor) {
-      const { error } = await supabase.auth.mfa.unenroll({ factorId: totpFactor.id });
-      if (!error) {
-        setIs2FAEnabled(false);
-        setSecurityMessage({ type: 'success', text: "2FA wurde deaktiviert." });
-      } else {
-        setSecurityMessage({ type: 'error', text: "Fehler beim Deaktivieren von 2FA." });
-      }
-    }
-    setTwoFaLoading(false);
-  };
 
   const handleSecurityAction = (action: () => Promise<{success?: string, error?: string}>) => {
     setSecurityMessage(null);
@@ -536,36 +439,20 @@ export default function SettingsClient({ profile, email, generateCheckoutUrlActi
                       )}
                     </div>
                   </div>
-                  
-                  {/* 2FA SECTION - DISABLED */}
-                  <div className="p-5 rounded-2xl border border-shading/10 bg-white flex items-center justify-between opacity-50 grayscale pointer-events-none">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-core text-sm">Zwei-Faktor-Authentifizierung (2FA)</span>
-                      <span className="text-xs text-core/60 mt-1">Schütze deinen Account zusätzlich mit einer Authenticator-App. (In Kürze verfügbar)</span>
-                    </div>
-                    <button className="px-4 py-2 bg-core text-white font-bold text-xs uppercase tracking-widest rounded-lg shadow-sm">
-                      Aktivieren
-                    </button>
-                  </div>
                 </div>
 
-                {/* DANGER ZONE */}
+                {/* ACCOUNT DELETION */}
                 <div className="bg-white border border-red-500/20 rounded-3xl p-8 shadow-sm flex flex-col gap-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
-                      <AlertTriangle className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-black text-red-500 uppercase tracking-tight">Gefahrenzone</h2>
-                      <p className="text-xs font-mono text-core/40">Zerstörerische Aktionen für deinen Account</p>
-                    </div>
-                  </div>
-
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between p-4 border border-red-200 rounded-xl bg-red-50/50">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-red-600 text-sm">Account endgültig löschen</span>
-                        <span className="text-xs text-red-600/70 mt-1 max-w-sm">Dein Account und alle Metadaten werden dauerhaft entfernt. <strong>Wichtig:</strong> Du erhältst unmittelbar vor der Löschung automatisch einen vollständigen Daten-Dump an deine E-Mail-Adresse.</span>
+                      <div className="flex gap-4 items-center">
+                        <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-red-500 shrink-0">
+                          <AlertTriangle className="w-6 h-6" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-red-600 text-lg">Account endgültig löschen</span>
+                          <span className="text-sm text-red-600/70 mt-1 max-w-md">Dein Account und alle Metadaten werden dauerhaft entfernt. Wichtig: Du erhältst unmittelbar vor der Löschung automatisch einen vollständigen Daten-Dump an deine E-Mail-Adresse.</span>
+                        </div>
                       </div>
                       <button 
                         disabled={isPending} 

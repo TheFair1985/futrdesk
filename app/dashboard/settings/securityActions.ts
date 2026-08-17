@@ -35,6 +35,9 @@ export async function deleteAccount() {
     process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY || ''
   );
 
+  // Trigger data export before deleting the account
+  await triggerDataExport();
+
   // Hard delete the user from auth.users (cascades automatically to public.users if foreign key is set up with CASCADE)
   // If no CASCADE is set, we delete manually first
   await admin.from('users').delete().eq('id', user.id);
