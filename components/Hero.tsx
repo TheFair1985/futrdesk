@@ -89,12 +89,12 @@ export function Hero() {
 
         <motion.h1 variants={staggerItem} className="text-4xl md:text-5xl lg:text-[4rem] font-bold text-core leading-[1.05] tracking-tighter mb-6 max-w-xl">
           E-Rechnungen.<br />
-          Automatisiert.<br />
-          Einfach.
+          ZUGFeRD.<br />
+          Vollautomatisiert.
         </motion.h1>
 
         <motion.p variants={staggerItem} className="text-lg text-core/70 mb-10 max-w-lg leading-relaxed">
-          Du reparierst, baust und lieferst. Futrdesk macht den Papierkram. Schick einfach eine WhatsApp, oder Email – wir erledigen den Rest.
+          Schluss mit manueller Eingabe. Sende PDF-Rechnungen einfach per WhatsApp, Telegram oder E-Mail – Futrdesk konvertiert alles in strukturierte ZUGFeRD-XML Dateien, bereit für deine Buchhaltung.
         </motion.p>
 
         <motion.div variants={staggerItem} className="relative group w-fit cursor-pointer">
@@ -134,7 +134,7 @@ export function Hero() {
                   <img src="/note.png" alt="Handwritten Note" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col mt-1 px-1">
-                  <span className="text-[13px] text-gray-800 leading-snug mb-1">Bitte Rechnung erstellen, danke!</span>
+                  <span className="text-[13px] text-gray-800 leading-snug mb-1">Bitte in ZUGFeRD wandeln, danke!</span>
                   <div className="flex items-center justify-end gap-1">
                     <span className="text-[10px] text-gray-500">14:23</span>
                     <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />
@@ -145,7 +145,7 @@ export function Hero() {
               {/* Bot answers (White Bubble) */}
               <div className="bg-white p-2.5 rounded-2xl rounded-tl-none shadow-sm relative self-start max-w-[85%] border border-gray-100">
                 <p className="text-[13px] text-gray-800 font-sans leading-snug">
-                  Wird erledigt Boss! Ich extrahiere die Daten... ⏳
+                  Rechnung erkannt. Konvertiere in ZUGFeRD-XML... ⏳
                 </p>
                 <div className="flex items-center justify-end mt-1 gap-1">
                   <span className="text-[10px] text-gray-400">14:23</span>

@@ -8,17 +8,17 @@ const features = [
   {
     icon: Smartphone,
     title: "EINGANG",
-    text: "Schicke uns ein Bild, eine PDF, oder sonstige Dateien über deinen bevorzugten Kanal.",
+    text: "Sende deine PDF-Rechnungen ganz einfach über deinen bevorzugten Kanal (WhatsApp, E-Mail, Telegram).",
   },
   {
     icon: BrainCircuit,
-    title: "VERARBEITUNG",
-    text: "Unsere KI analysiert alles automatisch und generiert eine konforme Rechnung.",
+    title: "KONVERTIERUNG",
+    text: "Unsere Engine extrahiert alle Daten automatisch und wandelt sie in das strukturierte ZUGFeRD-XML Format.",
   },
   {
     icon: FileCheck,
-    title: "VERSAND",
-    text: "Nach deiner Freigabe geht das fertige PDF direkt an die Zieladresse.",
+    title: "ÜBERGABE",
+    text: "Die valide ZUGFeRD-Datei (PDF/A-3 mit XML) wird sofort an deine Buchhaltungs-Software übergeben.",
   },
   {
     icon: Archive,
