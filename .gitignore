@@ -18,4 +18,6 @@ out/
 build/
 dist/
 *.log
+tsconfig.tsbuildinfo
 .vercel
+Bildschirmaufnahme*

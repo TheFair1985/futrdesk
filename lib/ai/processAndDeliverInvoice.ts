@@ -1,21 +1,16 @@
-import { createClient } from '@supabase/supabase-js';
 import { extractInvoice } from './extractInvoice';
 import { generateZugferdPdf } from '../zugferd/generatePdf';
 import { sendWhatsAppText, sendWhatsAppDocument } from '../whatsapp/sendMessage';
 import { sendTelegramText, sendTelegramDocument } from '../telegram/sendMessage';
 import { sendEmailWithAttachment, sendEmailText } from '../email/sendMessage';
-
-const getSupabaseAdmin = () => createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY || ''
-);
+import { getSupabaseAdmin } from '../supabase/admin';
 
 export async function processAndDeliverInvoice(invoiceId: string) {
   const supabaseAdmin = getSupabaseAdmin();
   
   // 1. Fetch invoice and channel details
   const { data: invoice } = await (supabaseAdmin.from('invoices') as any)
-    .select('user_id, pdf_storage_path, users(email, alert_channel), channels(whatsapp_number, telegram_chat_id, email_address)')
+    .select('user_id, pdf_storage_path, users(email, alert_channel), channels(phone_number, telegram_chat_id, email_address)')
     .eq('id', invoiceId)
     .single();
     
@@ -73,25 +68,25 @@ export async function processAndDeliverInvoice(invoiceId: string) {
 }
 
 async function routeMessage(channel: any, user: any, text: string) {
-  if (user?.alert_channel === 'whatsapp' && channel?.whatsapp_number) {
-    return sendWhatsAppText(channel.whatsapp_number, text);
+  if (user?.alert_channel === 'whatsapp' && channel?.phone_number) {
+    return sendWhatsAppText(channel.phone_number, text);
   } else if (user?.alert_channel === 'telegram' && channel?.telegram_chat_id) {
     return sendTelegramText(channel.telegram_chat_id, text);
   }
   
-  if (channel?.whatsapp_number) return sendWhatsAppText(channel.whatsapp_number, text);
+  if (channel?.phone_number) return sendWhatsAppText(channel.phone_number, text);
   if (channel?.telegram_chat_id) return sendTelegramText(channel.telegram_chat_id, text);
   if (channel?.email_address) return sendEmailText(channel.email_address, "Futrdesk Update", text);
 }
 
 async function routeDocument(channel: any, user: any, url: string, filename: string, caption: string) {
-  if (user?.alert_channel === 'whatsapp' && channel?.whatsapp_number) {
-    return sendWhatsAppDocument(channel.whatsapp_number, url, filename, caption);
+  if (user?.alert_channel === 'whatsapp' && channel?.phone_number) {
+    return sendWhatsAppDocument(channel.phone_number, url, filename, caption);
   } else if (user?.alert_channel === 'telegram' && channel?.telegram_chat_id) {
     return sendTelegramDocument(channel.telegram_chat_id, url, caption);
   }
   
-  if (channel?.whatsapp_number) return sendWhatsAppDocument(channel.whatsapp_number, url, filename, caption);
+  if (channel?.phone_number) return sendWhatsAppDocument(channel.phone_number, url, filename, caption);
   if (channel?.telegram_chat_id) return sendTelegramDocument(channel.telegram_chat_id, url, caption);
   if (channel?.email_address) return sendEmailWithAttachment(channel.email_address, "Deine ZUGFeRD Rechnung", caption, url, filename);
 }

@@ -1,12 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
 import { sendWhatsAppText } from '../whatsapp/sendMessage';
 import { sendTelegramText } from '../telegram/sendMessage';
 import { sendEmailText } from '../email/sendMessage';
-
-const getSupabaseAdmin = () => createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_SECRET_KEY || ''
-);
+import { getSupabaseAdmin } from '../supabase/admin';
 
 const TIER_LIMITS: Record<string, number> = {
   'STARTER': 25,
@@ -16,11 +11,32 @@ const TIER_LIMITS: Record<string, number> = {
 
 export async function checkAndConsumeInvoice(userId: string): Promise<boolean> {
   const supabase = getSupabaseAdmin();
-  
-  // 1. Hole User Metriken
+
+  // 1. Atomarer Verbrauch über DB-Funktion (verhindert Race Conditions bei parallelen Webhooks)
+  const { data: consumed, error: rpcError } = await supabase.rpc('consume_invoice_quota', {
+    p_user_id: userId
+  });
+
+  if (!rpcError && typeof consumed === 'boolean') {
+    if (consumed) return true;
+    // Limit erreicht -> Upsell Warning
+    const { data: user } = await supabase
+      .from('users')
+      .select('tier, alert_channel, email, channels(phone_number, telegram_chat_id)')
+      .eq('id', userId)
+      .single();
+    if (user) await triggerUpsellWarning(user, userId);
+    return false;
+  }
+
+  if (rpcError) {
+    console.warn('consume_invoice_quota RPC not available, falling back to non-atomic check:', rpcError.message);
+  }
+
+  // Fallback: nicht-atomar (funktioniert auch vor Migration 00008)
   const { data: user, error } = await supabase
     .from('users')
-    .select('tier, invoices_used_this_month, extra_invoices_available, alert_channel, email, channels(whatsapp_number, telegram_chat_id)')
+    .select('tier, invoices_used_this_month, extra_invoices_available, alert_channel, email, channels(phone_number, telegram_chat_id)')
     .eq('id', userId)
     .single();
 
@@ -55,10 +71,11 @@ async function triggerUpsellWarning(user: any, userId: string) {
   
   // Checkout base URL construction - Link Prettifier
   // Using an internal redirect avoids spam filters and looks clean!
-  const createCheckoutLink = (variantId: string) => 
-    `https://futrdesk.com/api/checkout?variant=${variantId}&user=${userId}`;
+  const appUrl = process.env.APP_URL || 'https://futrdesk.com';
+  const createCheckoutLink = (variantId: string) =>
+    `${appUrl}/api/checkout?variant=${variantId}&user=${userId}`;
 
-  const V_PRO = process.env.LEMON_SQUEEZY_PRODUCT_PRO || '1285123';
+  const V_PRO = process.env.LEMON_SQUEEZY_PRODUCT_PRO_ID || '1285123';
   const V_BUSINESS = process.env.LEMON_SQUEEZY_PRODUCT_BUSINESS_ID || '1285127';
   const V_EINZEL = process.env.LEMON_SQUEEZY_PRODUCT_EINZELRECHNUNG || '1285155';
   const V_PAKET20 = process.env.LEMON_SQUEEZY_PRODUCT_RECHNUNGSPAKET_20 || '1285162';
@@ -99,9 +116,9 @@ async function triggerUpsellWarning(user: any, userId: string) {
   try {
     let routed = false;
     
-    if (user.alert_channel === 'whatsapp' && channels?.whatsapp_number) {
+    if (user.alert_channel === 'whatsapp' && channels?.phone_number) {
       // WhatsApp doesn't support generic URL buttons easily without templates, so we send the pretty text
-      await sendWhatsAppText(channels.whatsapp_number, message);
+      await sendWhatsAppText(channels.phone_number, message);
       routed = true;
     } else if (user.alert_channel === 'telegram' && channels?.telegram_chat_id) {
       // Telegram gets the rich CTA buttons!
@@ -110,8 +127,8 @@ async function triggerUpsellWarning(user: any, userId: string) {
     }
     
     if (!routed) {
-      if (channels?.whatsapp_number) {
-        await sendWhatsAppText(channels.whatsapp_number, message);
+      if (channels?.phone_number) {
+        await sendWhatsAppText(channels.phone_number, message);
       } else if (channels?.telegram_chat_id) {
         await sendTelegramText(channels.telegram_chat_id, message, telegramButtons);
       } else if (user.email) {

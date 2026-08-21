@@ -1,81 +1,49 @@
-export async function sendEmailWithAttachment(to: string, subject: string, text: string, pdfUrl: string, filename: string) {
-  // Using Resend API as an example for the mailer
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.error('RESEND_API_KEY is not defined.');
-    return;
-  }
-  
+import { sendPlunkEmail, textToHtml } from '../email/plunk';
+
+/**
+ * Sends an email with a PDF attachment via Plunk.
+ * The PDF is downloaded from the provided (signed) URL first.
+ */
+export async function sendEmailWithAttachment(
+  to: string,
+  subject: string,
+  text: string,
+  pdfUrl: string,
+  filename: string
+) {
   try {
-    // Download pdf from Supabase public/signed url to attach it
     const fileRes = await fetch(pdfUrl);
     if (!fileRes.ok) {
       console.error('Failed to download PDF for email attachment');
       return;
     }
-    
+
     const arrayBuffer = await fileRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: 'invoices@futrdesk.com', // MUST be verified in Resend
-        to: to,
-        subject: subject,
-        text: text,
-        attachments: [{
-          filename: filename,
-          content: buffer.toString('base64')
-        }]
-      })
+
+    await sendPlunkEmail({
+      to,
+      subject,
+      body: textToHtml(text),
+      from: process.env.MAIL_FROM_INVOICES || 'invoices@futrdesk.com',
+      attachments: [
+        {
+          filename,
+          content: buffer.toString('base64'),
+          contentType: 'application/pdf'
+        }
+      ]
     });
-    
-    if (!response.ok) {
-      const err = await response.json();
-      console.error('Failed to send email:', err);
-    } else {
-      console.log(`Email sent successfully to ${to}`);
-    }
   } catch (err) {
-    console.error('Error sending email:', err);
+    console.error('Error sending email with attachment:', err);
   }
 }
 
 export async function sendEmailText(to: string, subject: string, text: string) {
-  // Using Resend API as an example for the mailer
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.error('RESEND_API_KEY is not defined.');
-    return;
-  }
-  
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: 'alerts@futrdesk.com', // MUST be verified in Resend
-        to: to,
-        subject: subject,
-        text: text
-      })
-    });
-    
-    if (!response.ok) {
-      const err = await response.json();
-      console.error('Failed to send text email:', err);
-    } else {
-      console.log(`Text Email sent successfully to ${to}`);
-    }
-  } catch (err) {
-    console.error('Error sending text email:', err);
-  }
+  await sendPlunkEmail({
+    to,
+    subject,
+    body: textToHtml(text),
+    from: process.env.MAIL_FROM_ALERTS || 'alerts@futrdesk.com'
+  });
 }
